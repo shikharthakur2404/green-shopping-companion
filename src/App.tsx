@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   BookOpen,
   Calculator,
@@ -7,7 +7,6 @@ import {
   Loader2,
   MapPin,
   Navigation,
-  Radio,
   ShieldCheck,
   ShoppingBag,
   Store as StoreIcon,
@@ -148,7 +147,7 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <div className="hud-panel flex items-center gap-3 px-3.5 py-3">
+    <div className="surface-panel flex items-center gap-3 px-3.5 py-3">
       <span
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border"
         style={{
@@ -160,13 +159,13 @@ function StatCard({
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="data-value truncate text-base font-semibold leading-tight text-emerald-50">
+        <p className="data-value truncate text-base font-semibold leading-tight text-zinc-100">
           {value}
         </p>
-        <p className="truncate text-[10px] uppercase tracking-[0.12em] text-emerald-100/35">
+        <p className="truncate text-[11px] text-zinc-400">
           {label}
         </p>
-        <p className="truncate text-[10px] text-emerald-100/25">{hint}</p>
+        <p className="truncate text-[11px] text-zinc-400">{hint}</p>
       </div>
     </div>
   );
@@ -179,6 +178,8 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<Location>(initialLocation);
   const [usingGeolocation, setUsingGeolocation] = useState(false);
   const [locating, setLocating] = useState(false);
+  const locationRequest = useRef(0);
+  const [locationNotice, setLocationNotice] = useState<string>();
 
   const [stores, setStores] = useState<Store[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
@@ -307,6 +308,9 @@ export default function App() {
   function handleCityChange(nextCityId: CityId) {
     const city = CITIES.find((item) => item.id === nextCityId);
     if (!city) return;
+    locationRequest.current += 1;
+    setLocating(false);
+    setLocationNotice(undefined);
     setCityId(nextCityId);
     setUsingGeolocation(false);
     setSelectedStore(null);
@@ -318,15 +322,18 @@ export default function App() {
     });
   }
 
-  function handleLocate() {
+  const handleLocate = useCallback(() => {
+    const request = ++locationRequest.current;
     if (!('geolocation' in navigator)) {
-      setNotice('Geolocation is not available in this browser.');
+      setLocationNotice('Location is unavailable in this browser. Using the selected city.');
       return;
     }
 
     setLocating(true);
+    setLocationNotice(undefined);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (request !== locationRequest.current) return;
         setUsingGeolocation(true);
         setSelectedStore(null);
         setOptions(null);
@@ -337,15 +344,21 @@ export default function App() {
         });
         setLocating(false);
       },
-      () => {
+      (error) => {
+        if (request !== locationRequest.current) return;
         setLocating(false);
-        setNotice(
-          'Location permission was denied. Showing the selected city instead — no location data was stored.',
-        );
+        setLocationNotice(error.code === 1
+          ? 'Location access is off. Keeping the current map origin; you can choose a city below.'
+          : 'Could not find your location. Keeping the current map origin. Try again when ready.');
       },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
-  }
+  }, []);
+
+  useEffect(() => {
+    handleLocate();
+    return () => { locationRequest.current += 1; };
+  }, [handleLocate]);
 
   function handleLogTrip() {
     if (!activeRoute || !selectedStore || hasLogged) return;
@@ -377,12 +390,9 @@ export default function App() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-carbon-950 text-emerald-50">
-      <div className="pointer-events-none fixed inset-0 bg-greenstep-grid opacity-[0.35]" />
-      <div className="pointer-events-none fixed -left-40 -top-40 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]" />
-      <div className="pointer-events-none fixed -right-32 top-1/3 h-[380px] w-[380px] rounded-full bg-lime-400/[0.06] blur-[120px]" />
+    <div className="relative min-h-screen overflow-x-hidden bg-carbon-950 text-zinc-100">
 
-      <header className="sticky top-0 z-[1000] border-b border-white/5 bg-carbon-950/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-[1000] border-b border-white/[0.08] bg-carbon-950/80 backdrop-blur-xl">
         <div className="mx-auto max-w-[1560px] px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 py-3">
             <button
@@ -390,20 +400,19 @@ export default function App() {
               onClick={() => setActiveTab('find')}
               className="flex items-center gap-3 text-left"
             >
-              <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 to-emerald-600 shadow-glow">
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500">
                 <Leaf className="h-5 w-5 text-carbon-950" />
-                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-carbon-950 bg-lime-300" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-display text-xl font-extrabold tracking-tight text-emerald-50">
+                  <h1 className="font-display text-xl font-extrabold tracking-tight text-zinc-100">
                     GreenStep
                   </h1>
-                  <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
+                  <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
                     Campus pilot
                   </span>
                 </div>
-                <p className="hidden text-[11px] text-emerald-100/40 sm:block">
+                <p className="hidden text-[11px] text-zinc-400 sm:block">
                   Green Shopping Companion — shop close, travel smart.
                 </p>
               </div>
@@ -425,7 +434,7 @@ export default function App() {
                     className={cn(
                       'flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition',
                       active
-                        ? 'bg-emerald-400 text-carbon-950 shadow-glow'
+                        ? 'bg-white/[0.08] text-zinc-100'
                         : 'text-emerald-100/55 hover:bg-white/5 hover:text-emerald-100/85',
                     )}
                   >
@@ -440,7 +449,7 @@ export default function App() {
               <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
                 <MapPin className="h-4 w-4 text-emerald-300" />
                 <div className="max-w-[180px]">
-                  <p className="text-[8px] uppercase tracking-[0.16em] text-emerald-100/30">
+                  <p className="text-[11px] text-zinc-400">
                     Origin
                   </p>
                   <p className="truncate text-[11px] font-medium text-emerald-100/75">
@@ -482,7 +491,7 @@ export default function App() {
                   className={cn(
                     'flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-semibold transition',
                     active
-                      ? 'bg-emerald-400 text-carbon-950'
+                      ? 'bg-white/[0.08] text-zinc-100'
                       : 'border border-white/10 bg-white/[0.03] text-emerald-100/55',
                   )}
                 >
@@ -512,7 +521,7 @@ export default function App() {
                   nearestStore ? formatDistance(nearestStore.distanceKm) : '—'
                 }
                 hint={nearestStore?.name ?? 'Searching…'}
-                accent="#22d3ee"
+                accent="#94a3b8"
               />
               <StatCard
                 icon={<Leaf className="h-4 w-4" />}
@@ -523,7 +532,7 @@ export default function App() {
                     : '—'
                 }
                 hint={greenestRoute?.modeName ?? 'Select a shop'}
-                accent="#a3e635"
+                accent="#10b981"
               />
               <StatCard
                 icon={<TrendingDown className="h-4 w-4" />}
@@ -538,7 +547,7 @@ export default function App() {
                     ? `Car trip = ${formatEmissions(carRoute.emissionsGrams)}`
                     : 'Round trip comparison'
                 }
-                accent="#fb7185"
+                accent="#10b981"
               />
             </div>
 
@@ -557,7 +566,7 @@ export default function App() {
                   locating={locating}
                   usingGeolocation={usingGeolocation}
                   source={source}
-                  notice={notice}
+                  notice={[locationNotice, notice].filter(Boolean).join(' ') || undefined}
                   cityId={cityId}
                   onCityChange={handleCityChange}
                   onLocate={handleLocate}
@@ -567,17 +576,17 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('calculator')}
-                  className="hud-panel group flex w-full items-center justify-between gap-3 p-4 text-left transition hover:border-emerald-400/30 hover:bg-white/[0.05]"
+                  className="surface-panel group flex w-full items-center justify-between gap-3 p-4 text-left transition hover:border-emerald-400/30 hover:bg-white/[0.05]"
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
                       <Calculator className="h-4 w-4" />
                     </span>
                     <div>
-                      <p className="text-sm font-bold text-emerald-50">
+                      <p className="text-sm font-bold text-zinc-100">
                         Compare any distance
                       </p>
-                      <p className="text-[11px] text-emerald-100/40">
+                      <p className="text-[11px] text-zinc-400">
                         Open the standalone carbon calculator
                       </p>
                     </div>
@@ -602,17 +611,16 @@ export default function App() {
                   <div className="pointer-events-none absolute left-3 top-3 z-[800] rounded-2xl border border-emerald-400/15 bg-carbon-950/80 px-3 py-2 shadow-panel backdrop-blur-md">
                     <div className="flex items-center gap-2">
                       <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-emerald-400" />
                         <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                       </span>
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-emerald-300/80">
-                        {source === 'osm' ? 'Live nearby scan' : 'Nearby scan'}
+                      <p className="text-[11px] font-semibold text-emerald-300/80">
+                        {source === 'osm' ? 'Nearby shops' : 'Sample shops'}
                       </p>
                     </div>
-                    <p className="mt-1 text-xs font-medium text-emerald-50/80">
+                    <p className="mt-1 text-xs font-medium text-zinc-100/80">
                       {stores.length} shops within 5 km
                     </p>
-                    <p className="text-[10px] text-emerald-100/35">
+                    <p className="text-[11px] text-zinc-400">
                       {usingGeolocation
                         ? 'Around your location'
                         : userLocation.label}
@@ -626,14 +634,14 @@ export default function App() {
                           className="h-2 w-2 rounded-full"
                           style={{ backgroundColor: activeRoute.color }}
                         />
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+                        <p className="text-[11px] font-semibold text-zinc-400">
                           {activeRoute.modeName} route
                         </p>
                       </div>
-                      <p className="mt-1 truncate text-xs font-medium text-emerald-50/85">
+                      <p className="mt-1 truncate text-xs font-medium text-zinc-100/85">
                         {selectedStore.name}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-emerald-100/40">
+                      <p className="mt-0.5 text-[11px] text-zinc-400">
                         {activeRoute.isDelivery
                           ? `${formatEmissions(activeRoute.emissionsGrams)} · next-day parcel`
                           : `${formatEmissions(activeRoute.emissionsGrams)} · ${formatDistance(activeRoute.distanceKm)} round trip`}
@@ -641,10 +649,7 @@ export default function App() {
                     </div>
                   )}
 
-                  <div className="pointer-events-none absolute right-3 top-3 z-[800] hidden items-center gap-1.5 rounded-full border border-white/10 bg-carbon-950/80 px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-[0.14em] text-emerald-100/45 backdrop-blur-md sm:flex">
-                    <Radio className="h-3 w-3 text-emerald-300" />
-                    OSM · OSRM
-                  </div>
+
                 </div>
 
                 <RouteComparison
@@ -675,7 +680,7 @@ export default function App() {
 
         {activeTab === 'methodology' && <Methodology />}
 
-        <footer className="mt-6 flex flex-col gap-2 border-t border-white/5 pt-4 text-[10px] text-emerald-100/25 sm:flex-row sm:items-center sm:justify-between">
+        <footer className="mt-6 flex flex-col gap-2 border-t border-white/[0.08] pt-4 text-[11px] text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-1.5">
             <ShoppingBag className="h-3 w-3" />
             OpenStreetMap · OSRM · UK DESNZ 2026/2025 · EEA. Estimates, not
@@ -683,7 +688,7 @@ export default function App() {
           </p>
           <p className="flex items-center gap-1.5">
             <ShieldCheck className="h-3 w-3" />
-            Location processed on-device. No account, no stored location.
+            No account needed. Coordinates sent to map and routing providers.
           </p>
         </footer>
       </div>

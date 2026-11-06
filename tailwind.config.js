@@ -10,10 +10,10 @@ export default {
       },
       colors: {
         carbon: {
-          950: '#04100a',
-          900: '#07160e',
-          800: '#0b2117',
-          700: '#103021',
+          950: '#0a0f0c',
+          900: '#111814',
+          800: '#18221c',
+          700: '#24322a',
         },
         leaf: {
           300: '#6ee7b7',
@@ -22,8 +22,7 @@ export default {
         },
       },
       boxShadow: {
-        glow: '0 0 40px -12px rgba(52, 211, 153, 0.55)',
-        panel: '0 24px 80px -32px rgba(0, 0, 0, 0.85)',
+        panel: '0 4px 16px rgba(0, 0, 0, 0.12)',
         card: '0 18px 50px -26px rgba(0, 0, 0, 0.9)',
       },
       keyframes: {

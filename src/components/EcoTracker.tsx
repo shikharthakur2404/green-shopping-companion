@@ -71,18 +71,17 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.14] via-white/[0.03] to-transparent p-5 sm:p-6">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-lime-300/15 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-carbon-900 p-5 sm:p-6">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="hud-eyebrow">My eco tracker</p>
+              <p className="section-label">My eco tracker</p>
               <span className="pill border-amber-300/25 bg-amber-300/10 text-amber-200">
                 <GraduationCap className="h-3 w-3" />
                 Campus pilot
               </span>
             </div>
-            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-emerald-50 sm:text-4xl">
+            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-zinc-100 sm:text-4xl">
               Your habits, made visible.
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-emerald-100/55">
@@ -96,13 +95,13 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
               <Trophy className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-100/35">
+              <p className="text-[11px] text-zinc-400">
                 Campus pilot
               </p>
               <p className="text-xs font-bold text-emerald-100/85">
                 FAU Nuremberg · Bucharest
               </p>
-              <p className="mt-0.5 flex items-center gap-1 text-[10px] text-emerald-100/35">
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-400">
                 <MapPin className="h-2.5 w-2.5" />
                 Student workshop edition
               </p>
@@ -112,79 +111,79 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
       </section>
 
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        <div className="hud-panel p-4">
+        <div className="surface-panel p-4">
           <div className="flex items-center gap-2 text-emerald-300">
             <Leaf className="h-4 w-4" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+            <span className="text-[11px] font-semibold text-zinc-400">
               Saved this month
             </span>
           </div>
           <p className="data-value mt-3 text-3xl font-semibold text-emerald-300">
             {displayKg}
-            <span className="ml-1 text-sm font-normal text-emerald-100/40">kg</span>
+            <span className="ml-1 text-sm font-normal text-zinc-400">kg</span>
           </p>
-          <p className="mt-1 text-[10px] text-emerald-100/35">CO₂e vs solo car</p>
+          <p className="mt-1 text-[11px] text-zinc-400">CO₂e vs solo car</p>
         </div>
 
-        <div className="hud-panel p-4">
+        <div className="surface-panel p-4">
           <div className="flex items-center gap-2 text-amber-300">
             <Flame className="h-4 w-4" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+            <span className="text-[11px] font-semibold text-zinc-400">
               Green streak
             </span>
           </div>
           <p className="data-value mt-3 text-3xl font-semibold text-amber-200">
             {currentStreak}
-            <span className="ml-1 text-sm font-normal text-emerald-100/40">
+            <span className="ml-1 text-sm font-normal text-zinc-400">
               {currentStreak === 1 ? 'day' : 'days'}
             </span>
           </p>
-          <p className="mt-1 text-[10px] text-emerald-100/35">
+          <p className="mt-1 text-[11px] text-zinc-400">
             {greenShare}% of trips were green
           </p>
         </div>
 
-        <div className="hud-panel p-4">
+        <div className="surface-panel p-4">
           <div className="flex items-center gap-2 text-lime-300">
             <TreePine className="h-4 w-4" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+            <span className="text-[11px] font-semibold text-zinc-400">
               Trees equivalent
             </span>
           </div>
           <p className="data-value mt-3 text-3xl font-semibold text-lime-200">
             {displayTrees}
-            <span className="ml-1 text-sm font-normal text-emerald-100/40">
+            <span className="ml-1 text-sm font-normal text-zinc-400">
               trees
             </span>
           </p>
-          <p className="mt-1 text-[10px] text-emerald-100/35">
+          <p className="mt-1 text-[11px] text-zinc-400">
             One year of absorption
           </p>
         </div>
 
-        <div className="hud-panel p-4">
+        <div className="surface-panel p-4">
           <div className="flex items-center gap-2 text-cyan-300">
             <TrendingDown className="h-4 w-4" />
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+            <span className="text-[11px] font-semibold text-zinc-400">
               Car km avoided
             </span>
           </div>
           <p className="data-value mt-3 text-3xl font-semibold text-cyan-200">
             {carKmAvoided}
-            <span className="ml-1 text-sm font-normal text-emerald-100/40">km</span>
+            <span className="ml-1 text-sm font-normal text-zinc-400">km</span>
           </p>
-          <p className="mt-1 text-[10px] text-emerald-100/35">
+          <p className="mt-1 text-[11px] text-zinc-400">
             {tripsLogged} trips logged
           </p>
         </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="hud-panel p-5 sm:p-6">
+        <section className="surface-panel p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="hud-eyebrow">Monthly goal</p>
-              <h3 className="mt-1 font-display text-lg font-bold text-emerald-50">
+              <p className="section-label">Monthly goal</p>
+              <h3 className="mt-1 font-display text-lg font-bold text-zinc-100">
                 {progress.toFixed(0)}% of 10 kg
               </h3>
             </div>
@@ -196,7 +195,7 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
 
           <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/5">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-lime-300 transition-all duration-700"
+              className="h-full rounded-full bg-emerald-500 transition-all duration-700"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -207,24 +206,24 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
           </p>
 
           <div className="mt-5 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3">
-              <p className="text-[9px] uppercase tracking-[0.14em] text-emerald-100/35">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3">
+              <p className="text-[11px] text-zinc-400">
                 Trips
               </p>
               <p className="data-value mt-1 text-lg font-semibold text-emerald-100/85">
                 {tripsLogged}
               </p>
             </div>
-            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3">
-              <p className="text-[9px] uppercase tracking-[0.14em] text-emerald-100/35">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3">
+              <p className="text-[11px] text-zinc-400">
                 Green trips
               </p>
               <p className="data-value mt-1 text-lg font-semibold text-emerald-100/85">
                 {greenTrips}
               </p>
             </div>
-            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3">
-              <p className="text-[9px] uppercase tracking-[0.14em] text-emerald-100/35">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3">
+              <p className="text-[11px] text-zinc-400">
                 Last trip
               </p>
               <p className="mt-1 text-xs font-semibold text-emerald-100/70">
@@ -250,7 +249,7 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
             <button
               type="button"
               onClick={handleShare}
-              className="no-print inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400 px-3.5 py-2 text-xs font-bold text-carbon-950 transition hover:bg-emerald-300 hover:shadow-glow"
+              className="no-print inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400 px-3.5 py-2 text-xs font-bold text-carbon-950 transition hover:bg-emerald-300 "
             >
               {copied ? (
                 <>
@@ -271,14 +270,14 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
                   onReset();
                 }
               }}
-              className="no-print inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-2 text-xs font-semibold text-emerald-100/45 transition hover:border-white/20 hover:text-emerald-100/75"
+              className="no-print inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-2 text-xs font-semibold text-zinc-400 transition hover:border-white/20 hover:text-emerald-100/75"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset
             </button>
           </div>
 
-          <p className="mt-4 flex items-center gap-1.5 text-[10px] text-emerald-100/25">
+          <p className="mt-4 flex items-center gap-1.5 text-[11px] text-zinc-400">
             <Copy className="h-3 w-3" />
             Sharing copies a text summary unless your device supports native
             share. No account, no tracking.
@@ -287,23 +286,21 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
 
         <section>
           <div className="mb-2 flex items-center justify-between px-1">
-            <p className="hud-eyebrow">Shareable savings card</p>
-            <span className="text-[10px] text-emerald-100/30">{monthLabel}</span>
+            <p className="section-label">Shareable savings card</p>
+            <span className="text-[11px] text-zinc-400">{monthLabel}</span>
           </div>
-          <div className="print-card relative overflow-hidden rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/25 via-carbon-900 to-carbon-950 p-6 shadow-panel">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-lime-300/15 blur-2xl" />
-            <div className="pointer-events-none absolute -bottom-20 -left-16 h-52 w-52 rounded-full bg-emerald-400/10 blur-3xl" />
+          <div className="print-card relative overflow-hidden rounded-3xl border border-emerald-400/30 bg-carbon-900 p-6 shadow-panel">
 
             <div className="relative flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 to-emerald-600 shadow-glow">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500">
                   <Leaf className="h-5 w-5 text-carbon-950" />
                 </span>
                 <div>
-                  <p className="font-display text-lg font-bold leading-none text-emerald-50">
+                  <p className="font-display text-lg font-bold leading-none text-zinc-100">
                     GreenStep
                   </p>
-                  <p className="mt-1 text-[9px] uppercase tracking-[0.18em] text-emerald-200/50">
+                  <p className="mt-1 text-[11px] text-emerald-200/50">
                     Carbon savings card
                   </p>
                 </div>
@@ -315,23 +312,23 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
             </div>
 
             <div className="relative mt-8">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200/55">
+              <p className="text-[11px] font-semibold text-emerald-200/55">
                 CO₂e saved
               </p>
               <p className="data-value mt-1 text-6xl font-semibold leading-none text-emerald-200">
                 {displayKg}
-                <span className="ml-2 font-sans text-xl font-semibold text-emerald-100/45">
+                <span className="ml-2 font-sans text-xl font-semibold text-zinc-400">
                   kg
                 </span>
               </p>
-              <p className="mt-2 text-[11px] text-emerald-100/45">
+              <p className="mt-2 text-[11px] text-zinc-400">
                 versus driving the same shopping trips alone
               </p>
             </div>
 
             <div className="relative mt-6 grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-white/10 bg-carbon-950/35 p-2.5">
-                <p className="text-[8px] uppercase tracking-wide text-emerald-100/35">
+                <p className="text-[11px] text-zinc-400">
                   Trips
                 </p>
                 <p className="data-value mt-1 text-sm font-semibold text-emerald-100/85">
@@ -339,7 +336,7 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-carbon-950/35 p-2.5">
-                <p className="text-[8px] uppercase tracking-wide text-emerald-100/35">
+                <p className="text-[11px] text-zinc-400">
                   Streak
                 </p>
                 <p className="data-value mt-1 text-sm font-semibold text-emerald-100/85">
@@ -347,7 +344,7 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-carbon-950/35 p-2.5">
-                <p className="text-[8px] uppercase tracking-wide text-emerald-100/35">
+                <p className="text-[11px] text-zinc-400">
                   Trees
                 </p>
                 <p className="data-value mt-1 text-sm font-semibold text-emerald-100/85">
@@ -357,17 +354,17 @@ export function EcoTracker({ impact, onReset }: EcoTrackerProps) {
             </div>
 
             <div className="relative mt-6 flex items-center justify-between gap-2 border-t border-white/10 pt-3">
-              <p className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.14em] text-emerald-200/45">
+              <p className="flex items-center gap-1.5 text-[11px] text-emerald-200/45">
                 <ShoppingBag className="h-3 w-3" />
                 Shop close · travel smart
               </p>
-              <p className="text-[9px] font-semibold text-emerald-200/55">
+              <p className="text-[11px] font-semibold text-emerald-200/55">
                 FAU Nürnberg · Bucharest
               </p>
             </div>
           </div>
 
-          <p className="mt-2 px-1 text-[10px] leading-relaxed text-emerald-100/25">
+          <p className="mt-2 px-1 text-[11px] leading-relaxed text-zinc-400">
             Trees use a 21 kg CO₂ per mature tree per year absorption estimate.
             Savings are {formatEmissions(totalSavingsGrams)} CO₂e in total.
           </p>

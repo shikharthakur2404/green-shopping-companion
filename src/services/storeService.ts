@@ -12,8 +12,9 @@ export const CITIES: City[] = [
     id: 'nuremberg',
     name: 'Nuremberg',
     country: 'Germany',
-    lat: 49.4521,
-    lon: 11.0767,
+    // FAU Campus / Südstadt fallback origin.
+    lat: 49.4380,
+    lon: 11.0880,
   },
   {
     id: 'bucharest',
@@ -235,6 +236,11 @@ export function haversineKm(
   return 2 * earthRadiusKm * Math.asin(Math.sqrt(a));
 }
 
+/** Approximate road distance; actual routes depend on the street network. */
+export function estimatedRoadDistanceKm(from: { lat: number; lon: number }, to: { lat: number; lon: number }): number {
+  return haversineKm(from, to) * 1.2;
+}
+
 function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
@@ -272,7 +278,7 @@ function buildStore(
     category,
     address: buildAddress(tags),
     location: { lat, lon },
-    distanceKm: haversineKm(userLocation, { lat, lon }),
+    distanceKm: estimatedRoadDistanceKm(userLocation, { lat, lon }),
     tags,
     imageUrl: getStoreImageUrl(category, brand, `${element.type}/${element.id}`),
     openingHours: tags.opening_hours,
@@ -649,7 +655,7 @@ export function getFallbackStores(location: Location): Store[] {
   return sortByDistance(
     samples.map((store) => ({
       ...store,
-      distanceKm: haversineKm(location, store.location),
+      distanceKm: estimatedRoadDistanceKm(location, store.location),
     })),
   );
 }

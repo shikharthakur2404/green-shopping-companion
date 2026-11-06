@@ -126,12 +126,11 @@ const SOURCES = [
 export function Methodology() {
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.14] via-white/[0.03] to-transparent p-5 sm:p-6">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-400/15 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-carbon-900 p-5 sm:p-6">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="hud-eyebrow">Methodology &amp; sources</p>
-            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-emerald-50 sm:text-4xl">
+            <p className="section-label">Methodology &amp; sources</p>
+            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-zinc-100 sm:text-4xl">
               Transparent numbers, not vibes.
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-emerald-100/55">
@@ -143,7 +142,7 @@ export function Methodology() {
           <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-emerald-400/20 bg-carbon-950/45 px-4 py-3">
             <ShieldCheck className="h-5 w-5 text-emerald-300" />
             <div>
-              <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-100/35">
+              <p className="text-[11px] text-zinc-400">
                 Data review
               </p>
               <p className="text-xs font-bold text-emerald-100/85">
@@ -155,10 +154,10 @@ export function Methodology() {
       </section>
 
       <div className="grid gap-2.5 sm:grid-cols-3">
-        <div className="hud-panel p-4">
+        <div className="surface-panel p-4">
           <div className="flex items-center gap-2 text-emerald-300">
             <Leaf className="h-4 w-4" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+            <p className="text-[11px] font-semibold text-zinc-400">
               Per passenger
             </p>
           </div>
@@ -167,10 +166,10 @@ export function Methodology() {
             passenger-kilometre, not per vehicle.
           </p>
         </div>
-        <div className="hud-panel p-4">
+        <div className="surface-panel p-4">
           <div className="flex items-center gap-2 text-cyan-300">
             <Link2 className="h-4 w-4" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+            <p className="text-[11px] font-semibold text-zinc-400">
               Round trip
             </p>
           </div>
@@ -179,10 +178,10 @@ export function Methodology() {
             marked as a delivery.
           </p>
         </div>
-        <div className="hud-panel p-4">
+        <div className="surface-panel p-4">
           <div className="flex items-center gap-2 text-purple-300">
             <FileText className="h-4 w-4" />
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-100/40">
+            <p className="text-[11px] font-semibold text-zinc-400">
               Flat parcel
             </p>
           </div>
@@ -193,11 +192,11 @@ export function Methodology() {
         </div>
       </div>
 
-      <section className="hud-panel overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 px-5 py-4">
+      <section className="surface-panel overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] px-5 py-4">
           <div>
-            <p className="hud-eyebrow">Emission factor table</p>
-            <h3 className="mt-1 font-display text-lg font-bold text-emerald-50">
+            <p className="section-label">Emission factor table</p>
+            <h3 className="mt-1 font-display text-lg font-bold text-zinc-100">
               What GreenStep calculates with
             </h3>
           </div>
@@ -209,7 +208,7 @@ export function Methodology() {
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[680px] text-left text-[11px]">
-            <thead className="bg-white/[0.03] text-[9px] uppercase tracking-[0.14em] text-emerald-100/35">
+            <thead className="bg-white/[0.03] text-[11px] text-zinc-400">
               <tr>
                 <th className="px-5 py-2.5 font-semibold">Mode</th>
                 <th className="px-3 py-2.5 text-right font-semibold">Factor</th>
@@ -232,7 +231,7 @@ export function Methodology() {
                         {row.mode}
                       </span>
                       {row.badge && (
-                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-emerald-200/80">
+                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-200/80">
                           {row.badge}
                         </span>
                       )}
@@ -243,12 +242,12 @@ export function Methodology() {
                       {row.factor}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-emerald-100/50">{row.unit}</td>
-                  <td className="hidden px-3 py-3 text-emerald-100/40 md:table-cell">
+                  <td className="px-3 py-3 text-zinc-400">{row.unit}</td>
+                  <td className="hidden px-3 py-3 text-zinc-400 md:table-cell">
                     {row.detail}
                   </td>
                   <td className="px-5 py-3">
-                    <span className="text-[10px] font-semibold text-emerald-100/55">
+                    <span className="text-[11px] font-semibold text-emerald-100/55">
                       {row.source}
                     </span>
                   </td>
@@ -262,7 +261,7 @@ export function Methodology() {
       <section>
         <div className="mb-2 flex items-center gap-2 px-1">
           <BookOpen className="h-3.5 w-3.5 text-emerald-300" />
-          <p className="hud-eyebrow">Direct sources</p>
+          <p className="section-label">Direct sources</p>
         </div>
         <div className="grid gap-2.5 md:grid-cols-2">
           {SOURCES.map((source) => (
@@ -271,23 +270,23 @@ export function Methodology() {
               href={source.href}
               target="_blank"
               rel="noreferrer noopener"
-              className="group hud-panel flex flex-col p-4 transition hover:border-emerald-400/30 hover:bg-white/[0.05]"
+              className="group surface-panel flex flex-col p-4 transition hover:border-emerald-400/30 hover:bg-white/[0.05]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-[13px] font-bold text-emerald-50">
+                  <p className="text-[13px] font-bold text-zinc-100">
                     {source.title}
                   </p>
-                  <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-emerald-300/55">
+                  <p className="mt-0.5 text-[11px] text-emerald-300/55">
                     {source.publisher}
                   </p>
                 </div>
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-emerald-100/25 transition group-hover:text-emerald-300" />
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-zinc-400 transition group-hover:text-emerald-300" />
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-emerald-100/45">
+              <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
                 {source.description}
               </p>
-              <p className="mt-3 flex items-center gap-1.5 font-mono text-[10px] text-emerald-300/70">
+              <p className="mt-3 flex items-center gap-1.5 font-mono text-[11px] text-emerald-300/70">
                 <Link2 className="h-3 w-3" />
                 {source.label}
               </p>
@@ -296,14 +295,14 @@ export function Methodology() {
         </div>
       </section>
 
-      <section className="hud-panel p-5">
+      <section className="surface-panel p-5">
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-emerald-300" />
-          <h3 className="font-display text-sm font-bold text-emerald-50">
+          <h3 className="font-display text-sm font-bold text-zinc-100">
             Limits of this model
           </h3>
         </div>
-        <ul className="mt-3 grid gap-2.5 text-[11px] leading-relaxed text-emerald-100/50 sm:grid-cols-2">
+        <ul className="mt-3 grid gap-2.5 text-[11px] leading-relaxed text-zinc-400 sm:grid-cols-2">
           <li className="flex gap-2">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
             Real vehicles vary with occupancy, temperature, load, driving style
@@ -327,7 +326,7 @@ export function Methodology() {
         </ul>
       </section>
 
-      <p className="px-1 text-[10px] leading-relaxed text-emerald-100/25">
+      <p className="px-1 text-[11px] leading-relaxed text-zinc-400">
         GreenStep is a campus pilot built for the FAU Nuremberg and Bucharest
         sustainability workshops. Store locations come from OpenStreetMap;
         routes come from OSRM. Location is processed on-device.

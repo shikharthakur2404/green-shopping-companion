@@ -1,9 +1,8 @@
 import type { LatLng, RouteOption, Store } from '../types';
 import { buildRouteOptions } from './emissionService';
-import { haversineKm } from './storeService';
+import { estimatedRoadDistanceKm, haversineKm } from './storeService';
 
 const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving';
-const STRAIGHT_LINE_ROAD_FACTOR = 1.32;
 const ROUTE_TIMEOUT_MS = 5500;
 
 interface OsrmResponse {
@@ -62,7 +61,7 @@ function estimateCoordinates(
 
 function estimateRoute(from: LatLng, to: LatLng): RoadRoute {
   return {
-    distanceKm: haversineKm(from, to) * STRAIGHT_LINE_ROAD_FACTOR,
+    distanceKm: estimatedRoadDistanceKm(from, to),
     coordinates: estimateCoordinates(from, to),
     estimated: true,
   };

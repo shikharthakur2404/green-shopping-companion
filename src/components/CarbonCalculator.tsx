@@ -128,12 +128,11 @@ export function CarbonCalculator() {
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.14] via-white/[0.03] to-transparent p-5 sm:p-6">
-        <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-carbon-900 p-5 sm:p-6">
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-xl">
-            <p className="hud-eyebrow">Carbon calculator</p>
-            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-emerald-50 sm:text-4xl">
+            <p className="section-label">Carbon calculator</p>
+            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-zinc-100 sm:text-4xl">
               Put every option on the same scale.
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-emerald-100/55">
@@ -143,36 +142,36 @@ export function CarbonCalculator() {
           </div>
           <div className="flex shrink-0 gap-2">
             <div className="rounded-2xl border border-white/10 bg-carbon-950/50 px-4 py-3">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-100/35">
+              <p className="text-[11px] text-zinc-400">
                 One-way
               </p>
               <p className="data-value mt-1 text-2xl font-semibold text-emerald-300">
                 {distanceKm.toFixed(distanceKm % 1 === 0 ? 0 : 1)}
-                <span className="ml-1 text-sm text-emerald-100/40">km</span>
+                <span className="ml-1 text-sm text-zinc-400">km</span>
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-carbon-950/50 px-4 py-3">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-100/35">
+              <p className="text-[11px] text-zinc-400">
                 Round trip
               </p>
               <p className="data-value mt-1 text-2xl font-semibold text-emerald-100/80">
                 {(distanceKm * 2).toFixed(distanceKm % 1 === 0 ? 0 : 1)}
-                <span className="ml-1 text-sm text-emerald-100/40">km</span>
+                <span className="ml-1 text-sm text-zinc-400">km</span>
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="hud-panel p-5 sm:p-6">
+      <section className="surface-panel p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
               <Gauge className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-sm font-bold text-emerald-50">Trip distance</p>
-              <p className="text-[11px] text-emerald-100/40">
+              <p className="text-sm font-bold text-zinc-100">Trip distance</p>
+              <p className="text-[11px] text-zinc-400">
                 One-way shopping trip · 1 to 20 km
               </p>
             </div>
@@ -195,7 +194,7 @@ export function CarbonCalculator() {
             style={{ '--slider-progress': `${sliderProgress}%` } as CSSProperties}
             aria-label="Trip distance in kilometres"
           />
-          <div className="mt-2 flex justify-between font-mono text-[10px] tabular-nums text-emerald-100/30">
+          <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-zinc-400">
             <span>1 km</span>
             <span>5 km</span>
             <span>10 km</span>
@@ -206,15 +205,15 @@ export function CarbonCalculator() {
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="hud-panel p-5 sm:p-6">
+        <section className="surface-panel p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="hud-eyebrow">Side by side</p>
-              <h3 className="mt-1 font-display text-lg font-bold text-emerald-50">
+              <p className="section-label">Side by side</p>
+              <h3 className="mt-1 font-display text-lg font-bold text-zinc-100">
                 Emissions for this trip
               </h3>
             </div>
-            <span className="hidden items-center gap-1.5 text-[10px] text-emerald-100/35 sm:flex">
+            <span className="hidden items-center gap-1.5 text-[11px] text-zinc-400 sm:flex">
               <Scale className="h-3.5 w-3.5" />
               Bars scaled to the highest emitter
             </span>
@@ -241,10 +240,10 @@ export function CarbonCalculator() {
                         <ModeIcon icon={row.icon} className="h-4 w-4" />
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-[13px] font-bold text-emerald-50">
+                        <p className="truncate text-[13px] font-bold text-zinc-100">
                           {row.label}
                         </p>
-                        <p className="flex items-center gap-1.5 text-[10px] text-emerald-100/35">
+                        <p className="flex items-center gap-1.5 text-[11px] text-zinc-400">
                           <span>{row.factorLabel}</span>
                           <span className="text-emerald-100/15">·</span>
                           <span>
@@ -273,7 +272,6 @@ export function CarbonCalculator() {
                       style={{
                         width: `${width}%`,
                         backgroundColor: row.mode.color,
-                        boxShadow: `0 0 18px -4px ${row.mode.color}`,
                       }}
                     />
                   </div>
@@ -284,16 +282,16 @@ export function CarbonCalculator() {
         </section>
 
         <div className="space-y-4">
-          <section className="relative overflow-hidden rounded-3xl border border-purple-300/20 bg-gradient-to-br from-purple-400/15 via-white/[0.03] to-transparent p-5">
+          <section className="relative overflow-hidden rounded-3xl border border-purple-300/20 bg-carbon-900 p-5">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-purple-300/25 bg-purple-300/10 text-purple-200">
                 <Truck className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-purple-200/70">
+                <p className="text-[11px] font-semibold text-purple-200/70">
                   Honest comparison
                 </p>
-                <p className="font-display text-sm font-bold text-emerald-50">
+                <p className="font-display text-sm font-bold text-zinc-100">
                   {deliveryBeatsCar
                     ? 'Local delivery beats the solo car trip'
                     : 'The solo car trip is lower here'}
@@ -301,7 +299,7 @@ export function CarbonCalculator() {
               </div>
             </div>
 
-            <p className="mt-4 font-display text-xl font-bold leading-snug text-emerald-50">
+            <p className="mt-4 font-display text-xl font-bold leading-snug text-zinc-100">
               {deliveryBeatsCar
                 ? `A consolidated parcel saves ${formatEmissions(carDelta)} versus driving ${distanceKm.toFixed(1)} km.`
                 : `A consolidated parcel emits ${formatEmissions(carDelta)} more than this car trip.`}
@@ -309,7 +307,7 @@ export function CarbonCalculator() {
 
             <div className="mt-4 grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-white/10 bg-carbon-950/40 p-2.5">
-                <p className="text-[9px] uppercase tracking-wide text-rose-200/60">
+                <p className="text-[11px] text-rose-200/60">
                   Petrol car
                 </p>
                 <p className="data-value mt-1 text-sm font-semibold text-rose-200">
@@ -317,7 +315,7 @@ export function CarbonCalculator() {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-carbon-950/40 p-2.5">
-                <p className="text-[9px] uppercase tracking-wide text-purple-200/60">
+                <p className="text-[11px] text-purple-200/60">
                   Parcel
                 </p>
                 <p className="data-value mt-1 text-sm font-semibold text-purple-200">
@@ -325,7 +323,7 @@ export function CarbonCalculator() {
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-carbon-950/40 p-2.5">
-                <p className="text-[9px] uppercase tracking-wide text-cyan-200/60">
+                <p className="text-[11px] text-cyan-200/60">
                   Transit
                 </p>
                 <p className="data-value mt-1 text-sm font-semibold text-cyan-200">
@@ -334,7 +332,7 @@ export function CarbonCalculator() {
               </div>
             </div>
 
-            <p className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-emerald-100/50">
+            <p className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-zinc-400">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-200/70" />
               <span>
                 {deliveryBeatsTransit
@@ -346,16 +344,16 @@ export function CarbonCalculator() {
             </p>
           </section>
 
-          <section className="hud-panel p-5">
+          <section className="surface-panel p-5">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
                 <Leaf className="h-4 w-4" />
               </span>
-              <p className="text-sm font-bold text-emerald-50">
+              <p className="text-sm font-bold text-zinc-100">
                 What this means
               </p>
             </div>
-            <ul className="mt-3 space-y-2.5 text-[11px] leading-relaxed text-emerald-100/50">
+            <ul className="mt-3 space-y-2.5 text-[11px] leading-relaxed text-zinc-400">
               <li className="flex gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
                 Walking, cycling and e-bikes emit zero tailpipe CO₂e for the
@@ -376,7 +374,7 @@ export function CarbonCalculator() {
         </div>
       </div>
 
-      <p className="px-1 text-[10px] leading-relaxed text-emerald-100/25">
+      <p className="px-1 text-[11px] leading-relaxed text-zinc-400">
         Factors: UK DESNZ GHG conversion factors (2025/2026), EEA average EU
         grid intensity for EVs, and a consolidated last-mile parcel baseline
         (Scientific American / MIT). Estimates, not certified measurements.

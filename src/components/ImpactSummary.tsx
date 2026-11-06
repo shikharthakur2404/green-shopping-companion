@@ -30,11 +30,11 @@ export function ImpactSummary({ impact, onReset }: ImpactSummaryProps) {
     tripsLogged > 0 ? Math.round((greenTrips / tripsLogged) * 100) : 0;
 
   return (
-    <section className="hud-panel p-5">
+    <section className="surface-panel p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="hud-eyebrow">Your impact</p>
-          <h2 className="mt-1 flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-emerald-50">
+          <p className="section-label">Your impact</p>
+          <h2 className="mt-1 flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-zinc-100">
             <Leaf className="h-4 w-4 text-emerald-400" />
             Carbon saved
           </h2>
@@ -46,7 +46,7 @@ export function ImpactSummary({ impact, onReset }: ImpactSummaryProps) {
               onReset();
             }
           }}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] text-emerald-100/30 transition hover:border-white/15 hover:text-emerald-100/70"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] text-zinc-400 transition hover:border-white/15 hover:text-emerald-100/70"
           aria-label="Reset impact tracker"
           title="Reset impact tracker"
         >
@@ -56,66 +56,66 @@ export function ImpactSummary({ impact, onReset }: ImpactSummaryProps) {
 
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
-          <p className="font-display text-3xl font-semibold leading-none text-emerald-300">
+          <p className="data-value text-3xl font-semibold leading-none text-emerald-300">
             {totalKg < 0.01 ? '0' : totalKg.toFixed(2)}
-            <span className="ml-1 text-base font-medium text-emerald-100/45">
+            <span className="ml-1 text-base font-medium text-zinc-400">
               kg
             </span>
           </p>
-          <p className="mt-1 text-[11px] text-emerald-100/40">
+          <p className="mt-1 text-[11px] text-zinc-400">
             CO₂e saved vs solo car trips
           </p>
         </div>
-        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-300">
+        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[11px] font-semibold text-emerald-300">
           {greenShare}% green
         </span>
       </div>
 
       <div className="mt-4">
-        <div className="flex items-center justify-between text-[10px] text-emerald-100/40">
+        <div className="flex items-center justify-between text-[11px] text-zinc-400">
           <span>Monthly goal</span>
           <span>{progress.toFixed(0)}% of 10 kg</span>
         </div>
         <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/5">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-lime-300 transition-all duration-700"
+            className="h-full rounded-full bg-emerald-500 transition-all duration-700"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-emerald-100/50">
+        <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-zinc-400">
           <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" />
           {motivationalLine(totalSavingsGrams)}
         </p>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
-          <p className="font-display text-base font-semibold text-emerald-100/85">
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-2.5">
+          <p className="data-value text-base font-semibold text-emerald-100/85">
             {tripsLogged}
           </p>
-          <p className="text-[9px] uppercase tracking-wide text-emerald-100/35">
+          <p className="text-[11px] text-zinc-400">
             Trips logged
           </p>
         </div>
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
-          <p className="font-display text-base font-semibold text-emerald-100/85">
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-2.5">
+          <p className="data-value text-base font-semibold text-emerald-100/85">
             {carKmAvoided}
           </p>
-          <p className="text-[9px] uppercase tracking-wide text-emerald-100/35">
+          <p className="text-[11px] text-zinc-400">
             Car km avoided
           </p>
         </div>
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
-          <p className="font-display text-base font-semibold text-emerald-100/85">
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-2.5">
+          <p className="data-value text-base font-semibold text-emerald-100/85">
             {phoneCharges}
           </p>
-          <p className="text-[9px] uppercase tracking-wide text-emerald-100/35">
+          <p className="text-[11px] text-zinc-400">
             Phone charges
           </p>
         </div>
       </div>
 
-      <p className="mt-3 flex items-center gap-1.5 text-[10px] text-emerald-100/25">
+      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-zinc-400">
         <TrendingDown className="h-3 w-3" />
         Stored only in this browser. No account, no tracking.
       </p>
