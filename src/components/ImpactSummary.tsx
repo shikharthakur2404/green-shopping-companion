@@ -8,7 +8,7 @@ interface ImpactSummaryProps {
 }
 
 const MONTHLY_GOAL_GRAMS = 10_000;
-const GRAMS_PER_CAR_KM = 170;
+const GRAMS_PER_CAR_KM = 171;
 const GRAMS_PER_PHONE_CHARGE = 8.22;
 
 function motivationalLine(grams: number): string {

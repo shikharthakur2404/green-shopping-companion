@@ -13,6 +13,7 @@ import {
   Sparkles,
   TrainFront,
   Truck,
+  Zap,
 } from 'lucide-react';
 import type {
   ModeIconName,
@@ -50,6 +51,7 @@ function ModeIcon({
     bike: Bike,
     train: TrainFront,
     bus: Bus,
+    zap: Zap,
     car: Car,
     package: Package,
   } as const;
@@ -402,9 +404,10 @@ export function RouteComparison({
           )}
 
           <p className="mt-3 text-[10px] leading-relaxed text-emerald-100/25">
-            Estimates use published per-passenger factors: train 35 g/km, bus 90
-            g/km, petrol car 170 g/km, walk/bike 0 g/km, delivery ~120 g flat.
-            Distances are round trip unless marked otherwise.
+            Estimates use published per-passenger factors: tram/light rail 29
+            g/km, local bus 89 g/km, EV 45 g/km, petrol car 171 g/km,
+            walk/bike/e-bike 0 g/km, delivery 118 g flat per parcel. Distances
+            are round trip unless marked otherwise.
           </p>
         </>
       )}

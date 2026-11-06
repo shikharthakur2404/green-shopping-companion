@@ -8,16 +8,19 @@ import type {
 
 /**
  * Per-passenger emission factors in grams of CO2e per kilometre.
- * Values follow the ranges in the workshop brief (UK GHG conversion factors).
- * The online delivery value is a flat consolidated last-mile baseline in grams.
+ * Walk/cycle/e-bike are zero-tailpipe. Tram, bus, EV and petrol car values
+ * follow UK DESNZ GHG conversion factors (2025/2026) and EEA averages.
+ * Online delivery is a flat consolidated last-mile baseline per parcel.
  */
 export const EMISSION_FACTORS: EmissionFactors = {
   walking: 0,
   cycling: 0,
-  train: 35,
-  bus: 90,
-  car: 170,
-  delivery: 120,
+  ebike: 0,
+  train: 29,
+  bus: 89,
+  ev: 45,
+  car: 171,
+  delivery: 118,
 };
 
 export const TRANSPORT_MODES: TransportMode[] = [
@@ -44,9 +47,20 @@ export const TRANSPORT_MODES: TransportMode[] = [
     description: 'Zero tailpipe emissions and usually the fastest short trip.',
   },
   {
+    id: 'ebike',
+    name: 'E-Bike',
+    shortName: 'E-Bike',
+    icon: 'bike',
+    color: '#84cc16',
+    speedKmh: 22,
+    emissionFactor: EMISSION_FACTORS.ebike,
+    waitMinutes: 0,
+    description: 'Zero tailpipe emissions with a little electric assist.',
+  },
+  {
     id: 'train',
-    name: 'Train / tram',
-    shortName: 'Train',
+    name: 'Tram / light rail',
+    shortName: 'Transit',
     icon: 'train',
     color: '#22d3ee',
     speedKmh: 32,
@@ -56,7 +70,7 @@ export const TRANSPORT_MODES: TransportMode[] = [
   },
   {
     id: 'bus',
-    name: 'Bus',
+    name: 'Local bus (Euro 6)',
     shortName: 'Bus',
     icon: 'bus',
     color: '#fbbf24',
@@ -66,9 +80,20 @@ export const TRANSPORT_MODES: TransportMode[] = [
     description: 'Shared transport, higher emissions than rail but still efficient.',
   },
   {
+    id: 'ev',
+    name: 'Electric vehicle',
+    shortName: 'EV',
+    icon: 'zap',
+    color: '#38bdf8',
+    speedKmh: 32,
+    emissionFactor: EMISSION_FACTORS.ev,
+    waitMinutes: 2,
+    description: 'Battery electric car charged on the average EU grid.',
+  },
+  {
     id: 'car',
-    name: 'Car (solo)',
-    shortName: 'Car',
+    name: 'Petrol car (solo)',
+    shortName: 'Petrol',
     icon: 'car',
     color: '#fb7185',
     speedKmh: 30,
@@ -85,7 +110,7 @@ export const TRANSPORT_MODES: TransportMode[] = [
     speedKmh: 0,
     emissionFactor: EMISSION_FACTORS.delivery,
     waitMinutes: 0,
-    description: 'Consolidated van delivery, many parcels per route (~120 g flat).',
+    description: 'Consolidated van delivery, many parcels per route (118 g flat).',
   },
 ];
 

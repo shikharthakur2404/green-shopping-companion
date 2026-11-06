@@ -17,8 +17,10 @@ export interface City {
 export type TransportModeId =
   | 'walk'
   | 'bike'
+  | 'ebike'
   | 'train'
   | 'bus'
+  | 'ev'
   | 'car'
   | 'delivery';
 
@@ -27,6 +29,7 @@ export type ModeIconName =
   | 'bike'
   | 'train'
   | 'bus'
+  | 'zap'
   | 'car'
   | 'package';
 
@@ -45,8 +48,10 @@ export interface TransportMode {
 export interface EmissionFactors {
   walking: number;
   cycling: number;
+  ebike: number;
   train: number;
   bus: number;
+  ev: number;
   car: number;
   delivery: number;
 }
@@ -63,10 +68,12 @@ export interface Store {
   };
   distanceKm: number;
   tags: Record<string, string>;
+  imageUrl?: string;
   openingHours?: string;
   website?: string;
   phone?: string;
   isFallback?: boolean;
+  verifiedGreen?: boolean;
 }
 
 export interface RouteOption {
@@ -97,6 +104,7 @@ export interface ImpactState {
   totalSavingsGrams: number;
   tripsLogged: number;
   greenTrips: number;
+  currentStreak: number;
   lastLoggedAt: number | null;
 }
 

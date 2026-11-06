@@ -89,6 +89,122 @@ const OVERPASS_ENDPOINTS = [
 
 const SEARCH_RADIUS_M = 5000;
 
+const unsplash = (id: string) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=900&q=80`;
+
+/**
+ * Curated, high-resolution Unsplash retail photography.
+ * Brand photos are used where we have a strong match, otherwise we pick a
+ * category-appropriate photo deterministically so cards stay stable.
+ */
+const BRAND_IMAGES: Record<string, string> = {
+  zara: unsplash('photo-1483985988355-763728e1935b'),
+  'h&m': unsplash('photo-1490481651871-ab68de25d43d'),
+  "levi's": unsplash('photo-1542272604-787c3835535d'),
+  'c&a': unsplash('photo-1523381210434-271e8be1f52b'),
+  'tk maxx': unsplash('photo-1441984904996-e0b6ba687e04'),
+  adidas: unsplash('photo-1595950653106-6c9ebd614d3a'),
+  nike: unsplash('photo-1542291026-7eec264c27ff'),
+  deichmann: unsplash('photo-1460353581641-37baddab0fa2'),
+  breuninger: unsplash('photo-1555529669-e69e7aa0ba9a'),
+  galeria: unsplash('photo-1519567241046-7f570eee3ce6'),
+  decathlon: unsplash('photo-1551698618-1dfe5d97d256'),
+  edeka: unsplash('photo-1542838132-92c53300491e'),
+  'mega image': unsplash('photo-1578916171728-46686eac8d58'),
+  carrefour: unsplash('photo-1604719312566-8912e9227c6a'),
+  lush: unsplash('photo-1596462502278-27bfdc403348'),
+  'băneasa': unsplash('photo-1481437156560-3205f6a55735'),
+};
+
+const CATEGORY_IMAGES: Record<string, string[]> = {
+  clothes: [
+    unsplash('photo-1441986300917-64674bd600d8'),
+    unsplash('photo-1445205170230-053b83016050'),
+    unsplash('photo-1567401893414-76b7b1e5a7a5'),
+    unsplash('photo-1523381210434-271e8be1f52b'),
+  ],
+  shoes: [
+    unsplash('photo-1549298916-b41d501d3772'),
+    unsplash('photo-1600185365926-3a2ce3cdb9eb'),
+    unsplash('photo-1608231387042-66d1773070a5'),
+    unsplash('photo-1460353581641-37baddab0fa2'),
+  ],
+  department_store: [
+    unsplash('photo-1555529669-e69e7aa0ba9a'),
+    unsplash('photo-1519567241046-7f570eee3ce6'),
+    unsplash('photo-1441984904996-e0b6ba687e04'),
+  ],
+  sports: [
+    unsplash('photo-1551698618-1dfe5d97d256'),
+    unsplash('photo-1461896836934-ffe607ba8211'),
+    unsplash('photo-1540497077202-7c8a3999166f'),
+  ],
+  outdoor: [
+    unsplash('photo-1551698618-1dfe5d97d256'),
+    unsplash('photo-1461896836934-ffe607ba8211'),
+  ],
+  second_hand: [
+    unsplash('photo-1503342217505-b0a15ec3261c'),
+    unsplash('photo-1521334884684-d80222895322'),
+    unsplash('photo-1489987707025-afc232f7ea0f'),
+  ],
+  charity: [
+    unsplash('photo-1521334884684-d80222895322'),
+    unsplash('photo-1503342217505-b0a15ec3261c'),
+  ],
+  supermarket: [
+    unsplash('photo-1542838132-92c53300491e'),
+    unsplash('photo-1578916171728-46686eac8d58'),
+    unsplash('photo-1604719312566-8912e9227c6a'),
+  ],
+  convenience: [
+    unsplash('photo-1604719312566-8912e9227c6a'),
+    unsplash('photo-1542838132-92c53300491e'),
+  ],
+  greengrocer: [unsplash('photo-1518843875459-f738682238a6')],
+  mall: [
+    unsplash('photo-1481437156560-3205f6a55735'),
+    unsplash('photo-1519567241046-7f570eee3ce6'),
+  ],
+  marketplace: [unsplash('photo-1534723452862-4c874018d66d')],
+  cosmetics: [
+    unsplash('photo-1596462502278-27bfdc403348'),
+    unsplash('photo-1522335789203-aabd1fc54bc9'),
+  ],
+  default: [
+    unsplash('photo-1441984904996-e0b6ba687e04'),
+    unsplash('photo-1481437156560-3205f6a55735'),
+  ],
+};
+
+function hashString(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
+export function getStoreImageUrl(
+  category: string,
+  brandOrName: string,
+  seed: string,
+): string {
+  const brandMatch = BRAND_IMAGES[brandOrName.trim().toLowerCase()];
+  if (brandMatch) return brandMatch;
+
+  const images = CATEGORY_IMAGES[category] ?? CATEGORY_IMAGES.default;
+  return images[hashString(seed) % images.length];
+}
+
+function isVerifiedGreen(category: string, tags: Record<string, string>): boolean {
+  if (category === 'second_hand' || category === 'charity') return true;
+  const haystack = Object.values(tags).join(' ').toLowerCase();
+  return /organic|sustainab|repair|reuse|vintage|fair.?trade|zero.?waste|certified/.test(
+    haystack,
+  );
+}
+
 interface OverpassElement {
   type: string;
   id: number;
@@ -146,19 +262,24 @@ function buildStore(
 
   if (!name || lat === undefined || lon === undefined) return null;
 
+  const category = tags.shop ?? tags.amenity ?? 'shop';
+  const brand = tags.brand ?? tags.operator ?? name;
+
   return {
     id: `${element.type}/${element.id}`,
     name,
-    brand: tags.brand ?? tags.operator ?? name,
-    category: tags.shop ?? tags.amenity ?? 'shop',
+    brand,
+    category,
     address: buildAddress(tags),
     location: { lat, lon },
     distanceKm: haversineKm(userLocation, { lat, lon }),
     tags,
+    imageUrl: getStoreImageUrl(category, brand, `${element.type}/${element.id}`),
     openingHours: tags.opening_hours,
     website: tags.website ?? tags['contact:website'],
     phone: tags.phone ?? tags['contact:phone'],
     isFallback,
+    verifiedGreen: isVerifiedGreen(category, tags),
   };
 }
 
@@ -201,8 +322,10 @@ function createSampleStore(
       products,
       opening_hours: openingHours,
     },
+    imageUrl: getStoreImageUrl(category, brand, id),
     openingHours,
     isFallback: true,
+    verifiedGreen: true,
   };
 }
 
@@ -247,6 +370,16 @@ function nurembergSamples(): Store[] {
       49.45143,
       11.07622,
       'underwear jeans shirts basics',
+    ),
+    createSampleStore(
+      'sample-nbg-levis',
+      "Levi's",
+      "Levi's",
+      'clothes',
+      'Karolinenstraße 18, 90402 Nürnberg',
+      49.45088,
+      11.07662,
+      'jeans denim jackets shirts',
     ),
     createSampleStore(
       'sample-nbg-breuninger',
@@ -364,6 +497,16 @@ function bucharestSamples(): Store[] {
       44.44074,
       26.09855,
       'jeans basics underwear bras dresses',
+    ),
+    createSampleStore(
+      'sample-buh-levis',
+      "Levi's",
+      "Levi's",
+      'clothes',
+      'Calea Victoriei 150, București',
+      44.44204,
+      26.09746,
+      'jeans denim jackets shirts',
     ),
     createSampleStore(
       'sample-buh-ca',

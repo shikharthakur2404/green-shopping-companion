@@ -4,8 +4,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        display: ['Outfit', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
         carbon: {
@@ -23,6 +24,7 @@ export default {
       boxShadow: {
         glow: '0 0 40px -12px rgba(52, 211, 153, 0.55)',
         panel: '0 24px 80px -32px rgba(0, 0, 0, 0.85)',
+        card: '0 18px 50px -26px rgba(0, 0, 0, 0.9)',
       },
       keyframes: {
         'pulse-ring': {

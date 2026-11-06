@@ -1,16 +1,24 @@
 import {
+  BadgeCheck,
   ChevronRight,
+  Footprints,
+  Leaf,
   Loader2,
   LocateFixed,
   MapPin,
   RefreshCw,
   Search,
   Store as StoreIcon,
+  TrainFront,
   X,
 } from 'lucide-react';
 import type { CityId, Store } from '../types';
 import { cn } from '../lib/utils';
-import { formatDistance } from '../services/emissionService';
+import {
+  formatDistance,
+  formatDuration,
+  formatEmissions,
+} from '../services/emissionService';
 import {
   ALL_CATEGORY_ID,
   CITIES,
@@ -45,6 +53,18 @@ function categoryAccent(category: string): string {
   );
 }
 
+function carbonScore(distanceKm: number): {
+  grade: string;
+  color: string;
+  carGrams: number;
+} {
+  const carGrams = distanceKm * 2 * 171;
+  if (distanceKm <= 1) return { grade: 'A+', color: '#34d399', carGrams };
+  if (distanceKm <= 2) return { grade: 'A', color: '#a3e635', carGrams };
+  if (distanceKm <= 3.5) return { grade: 'B', color: '#fbbf24', carGrams };
+  return { grade: 'C', color: '#fb923c', carGrams };
+}
+
 function StoreRow({
   store,
   active,
@@ -55,53 +75,100 @@ function StoreRow({
   onSelect: () => void;
 }) {
   const accent = categoryAccent(store.category);
+  const score = carbonScore(store.distanceKm);
+  const walkMinutes = (store.distanceKm / 4.8) * 60;
+  const transitMinutes = (store.distanceKm / 32) * 60 + 7;
 
   return (
     <button
       type="button"
       onClick={onSelect}
       className={cn(
-        'group flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-200',
+        'group flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition-all duration-200',
         active
           ? 'border-emerald-400/50 bg-emerald-400/10 shadow-glow'
           : 'border-white/5 bg-white/[0.02] hover:border-emerald-400/25 hover:bg-white/[0.05]',
       )}
     >
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold"
-        style={{
-          borderColor: `${accent}55`,
-          backgroundColor: `${accent}14`,
-          color: accent,
-        }}
-      >
-        {store.name.charAt(0).toUpperCase()}
+      <span className="relative h-[86px] w-[86px] shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500/25 via-carbon-800 to-carbon-950">
+        {store.imageUrl && (
+          <img
+            src={store.imageUrl}
+            alt={`${store.name} storefront`}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={(event) => {
+              event.currentTarget.style.opacity = '0';
+            }}
+          />
+        )}
+        <span
+          className="absolute inset-x-1 bottom-1 truncate rounded-md border px-1.5 py-0.5 text-center text-[8px] font-bold uppercase tracking-[0.1em] backdrop-blur-md"
+          style={{
+            borderColor: `${accent}55`,
+            backgroundColor: `${accent}2e`,
+            color: '#ecfdf5',
+          }}
+        >
+          {getCategoryLabel(store.category)}
+        </span>
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2">
-          <span className="truncate text-sm font-semibold text-emerald-50">
+        <span className="flex items-center gap-1.5">
+          <span className="truncate text-sm font-bold text-emerald-50">
             {store.name}
           </span>
+          {store.verifiedGreen && (
+            <BadgeCheck
+              className="h-3.5 w-3.5 shrink-0 text-emerald-300"
+              aria-label="Verified green listing"
+            />
+          )}
           {store.isFallback && (
-            <span className="shrink-0 rounded-full border border-amber-300/20 bg-amber-300/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-200/80">
+            <span className="shrink-0 rounded-full border border-amber-300/20 bg-amber-300/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-amber-200/80">
               demo
             </span>
           )}
         </span>
-        <span className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-emerald-100/40">
-          <span className="shrink-0">{getCategoryLabel(store.category)}</span>
-          <span className="text-emerald-100/20">·</span>
-          <span className="truncate">{store.address}</span>
+        <span className="mt-1 block truncate text-[11px] text-emerald-100/40">
+          {store.address}
+        </span>
+        <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-emerald-100/45">
+          <span className="font-mono font-semibold tabular-nums text-emerald-300">
+            {formatDistance(store.distanceKm)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Footprints className="h-3 w-3 text-emerald-400/70" />
+            {formatDuration(walkMinutes)}
+          </span>
+          <span className="flex items-center gap-1">
+            <TrainFront className="h-3 w-3 text-cyan-400/70" />
+            {formatDuration(transitMinutes)}
+          </span>
+        </span>
+        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {store.verifiedGreen && (
+            <span className="pill border-emerald-400/25 bg-emerald-400/10 text-emerald-200/90">
+              Verified green
+            </span>
+          )}
+          <span
+            className="pill"
+            style={{
+              borderColor: `${score.color}40`,
+              backgroundColor: `${score.color}14`,
+              color: score.color,
+            }}
+            title={`Estimated solo-car round trip: ${formatEmissions(score.carGrams)}`}
+          >
+            <Leaf className="h-2.5 w-2.5" />
+            {score.grade} score
+          </span>
         </span>
       </span>
 
-      <span className="flex shrink-0 flex-col items-end gap-1">
-        <span className="text-xs font-semibold text-emerald-300">
-          {formatDistance(store.distanceKm)}
-        </span>
-        <ChevronRight className="h-3.5 w-3.5 text-emerald-100/25 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300" />
-      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-emerald-100/25 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300" />
     </button>
   );
 }
@@ -126,12 +193,12 @@ export function StoreSearch({
   onRetry,
 }: StoreSearchProps) {
   return (
-    <section className="hud-panel p-5">
+    <section className="hud-panel p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="hud-eyebrow">Step 01 · Nearby shops</p>
-          <h2 className="mt-1 font-display text-lg font-semibold tracking-tight text-emerald-50">
-            What are you buying?
+          <p className="hud-eyebrow">Find &amp; compare</p>
+          <h2 className="mt-1 font-display text-xl font-bold tracking-tight text-emerald-50">
+            Where are you shopping?
           </h2>
         </div>
         <button
@@ -151,19 +218,19 @@ export function StoreSearch({
       </div>
 
       <div className="relative mt-4">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-300/60" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-300/60" />
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Adidas, Zara, shoes, jeans…"
-          className="h-11 w-full rounded-xl border border-white/10 bg-carbon-950/60 pl-10 pr-10 text-sm text-emerald-50 placeholder:text-emerald-100/25 outline-none transition focus:border-emerald-400/50 focus:bg-carbon-950 focus:ring-2 focus:ring-emerald-400/10"
-          aria-label="Search shops by item or brand"
+          placeholder="Search stores, brands (Adidas, Zara...) or items (shoes, jeans, coat)"
+          className="h-12 w-full rounded-2xl border border-white/10 bg-carbon-950/60 pl-11 pr-10 text-[13px] text-emerald-50 placeholder:text-emerald-100/25 outline-none transition focus:border-emerald-400/50 focus:bg-carbon-950 focus:ring-2 focus:ring-emerald-400/10"
+          aria-label="Search stores, brands or items"
         />
         {query && (
           <button
             type="button"
             onClick={() => onQueryChange('')}
-            className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-emerald-100/40 transition hover:bg-white/10 hover:text-emerald-100"
+            className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-emerald-100/40 transition hover:bg-white/10 hover:text-emerald-100"
             aria-label="Clear search"
           >
             <X className="h-3.5 w-3.5" />
@@ -180,7 +247,7 @@ export function StoreSearch({
               type="button"
               onClick={() => onCategoryChange(item.id)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition',
                 active
                   ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-200'
                   : 'border-white/10 bg-white/[0.02] text-emerald-100/50 hover:border-white/15 hover:text-emerald-100/80',
@@ -204,7 +271,7 @@ export function StoreSearch({
               type="button"
               onClick={() => onCityChange(city.id)}
               className={cn(
-                'rounded-lg px-2.5 py-1 text-[11px] font-medium transition',
+                'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition',
                 cityId === city.id && !locating && !usingGeolocation
                   ? 'bg-emerald-400/15 text-emerald-200'
                   : 'text-emerald-100/40 hover:bg-white/5 hover:text-emerald-100/70',
@@ -217,7 +284,7 @@ export function StoreSearch({
 
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+            'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold',
             source === 'osm'
               ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300'
               : source === 'fallback'
@@ -275,23 +342,24 @@ export function StoreSearch({
         </span>
       </div>
 
-      <div className="mt-2 max-h-[336px] space-y-1.5 overflow-y-auto pr-1 greenstep-scroll">
+      <div className="mt-2 max-h-[430px] space-y-1.5 overflow-y-auto pr-1 greenstep-scroll">
         {loading ? (
           Array.from({ length: 5 }).map((_, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3"
+              className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-2.5"
             >
-              <div className="h-10 w-10 animate-pulse rounded-xl bg-white/5" />
+              <div className="h-[86px] w-[86px] animate-pulse rounded-xl bg-white/5" />
               <div className="flex-1 space-y-2">
                 <div className="h-3 w-2/3 animate-pulse rounded bg-white/5" />
                 <div className="h-2.5 w-full animate-pulse rounded bg-white/[0.03]" />
+                <div className="h-2.5 w-1/3 animate-pulse rounded bg-white/[0.03]" />
               </div>
             </div>
           ))
         ) : stores.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center">
-            <p className="text-sm font-medium text-emerald-100/70">
+            <p className="text-sm font-semibold text-emerald-100/70">
               No matching shops
             </p>
             <p className="mt-1 text-[11px] leading-relaxed text-emerald-100/35">
