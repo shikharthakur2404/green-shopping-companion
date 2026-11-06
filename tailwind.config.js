@@ -2,47 +2,42 @@
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
+    borderRadius: {
+      none: '0px',
+      sm: '2px',
+      DEFAULT: '4px',
+      md: '6px',
+      lg: '8px',
+      full: '9999px',
+    },
     extend: {
-      fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        display: ['Outfit', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-      },
       colors: {
-        carbon: {
-          950: '#0a0f0c',
-          900: '#111814',
-          800: '#18221c',
-          700: '#24322a',
+        paper: '#F4F0E6',
+        surface: '#FBF9F3',
+        ink: {
+          DEFAULT: '#17211C',
+          muted: '#5E6A63',
+          faint: 'rgba(23, 33, 28, 0.40)',
         },
-        leaf: {
-          300: '#6ee7b7',
-          400: '#34d399',
-          500: '#10b981',
+        hairline: 'rgba(23, 33, 28, 0.14)',
+        forest: {
+          DEFAULT: '#1E4D3B',
+          light: '#25604A',
+          tint: 'rgba(30, 77, 59, 0.08)',
         },
-      },
-      boxShadow: {
-        panel: '0 4px 16px rgba(0, 0, 0, 0.12)',
-        card: '0 18px 50px -26px rgba(0, 0, 0, 0.9)',
-      },
-      keyframes: {
-        'pulse-ring': {
-          '0%': { transform: 'scale(0.75)', opacity: '0.9' },
-          '80%, 100%': { transform: 'scale(2.2)', opacity: '0' },
+        vermilion: {
+          DEFAULT: '#D8452A',
+          tint: 'rgba(216, 69, 42, 0.08)',
         },
-        'float-in': {
-          '0%': { opacity: '0', transform: 'translateY(8px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-500px 0' },
-          '100%': { backgroundPosition: '500px 0' },
+        highlighter: {
+          DEFAULT: '#F6E05E',
+          tint: 'rgba(246, 224, 94, 0.25)',
         },
       },
-      animation: {
-        'pulse-ring': 'pulse-ring 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite',
-        'float-in': 'float-in 0.4s ease-out both',
-        shimmer: 'shimmer 1.6s linear infinite',
+      fontFamily: {
+        serif: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['Hanken Grotesk', 'system-ui', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'monospace'],
       },
     },
   },

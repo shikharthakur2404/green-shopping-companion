@@ -1,336 +1,205 @@
-import {
-  BookOpen,
-  ExternalLink,
-  FileText,
-  Info,
-  Leaf,
-  Link2,
-  ShieldCheck,
-} from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { EMISSION_FACTORS } from '../services/emissionService';
 
 interface FactorRow {
   mode: string;
-  factor: string;
+  factor: number;
   unit: string;
   detail: string;
   source: string;
-  badge?: string;
 }
 
-const FACTOR_ROWS: FactorRow[] = [
+const FACTORS: FactorRow[] = [
   {
     mode: 'Walking',
-    factor: '0',
+    factor: EMISSION_FACTORS.walking,
     unit: 'g CO₂e / passenger-km',
-    detail: 'Zero tailpipe emissions · active travel',
+    detail: 'Zero tailpipe emissions. Active travel.',
     source: 'UK DESNZ',
   },
   {
     mode: 'Cycling',
-    factor: '0',
+    factor: EMISSION_FACTORS.cycling,
     unit: 'g CO₂e / passenger-km',
-    detail: 'Zero tailpipe emissions · active travel',
+    detail: 'Zero tailpipe emissions. Active travel.',
     source: 'UK DESNZ',
   },
   {
     mode: 'E-Bike',
-    factor: '0',
+    factor: EMISSION_FACTORS.ebike,
     unit: 'g CO₂e / passenger-km',
-    detail: 'Zero tailpipe emissions · small electric assist',
+    detail: 'Small electric battery assist (approx. 0 g direct tailpipe).',
     source: 'UK DESNZ',
   },
   {
-    mode: 'Tram / light rail',
-    factor: `${EMISSION_FACTORS.train}`,
+    mode: 'Tram / Light Rail',
+    factor: EMISSION_FACTORS.train,
     unit: 'g CO₂e / passenger-km',
-    detail: 'Electric light rail, average occupancy',
-    source: 'UK DESNZ · EEA',
-    badge: 'Low carbon',
+    detail: 'National grid mix, average occupancy (2025/2026 dataset).',
+    source: 'UK DESNZ / EEA',
   },
   {
-    mode: 'Local bus (Euro 6)',
-    factor: `${EMISSION_FACTORS.bus}`,
+    mode: 'City Bus',
+    factor: EMISSION_FACTORS.bus,
     unit: 'g CO₂e / passenger-km',
-    detail: 'Modern Euro 6 diesel bus, average load',
+    detail: 'Local bus, average occupancy, Euro 6 fleet mix.',
     source: 'UK DESNZ',
   },
   {
-    mode: 'Electric vehicle',
-    factor: `${EMISSION_FACTORS.ev}`,
+    mode: 'Electric Car (EV)',
+    factor: EMISSION_FACTORS.ev,
     unit: 'g CO₂e / km',
-    detail: 'Battery EV charged on the average EU grid',
-    source: 'EEA · UK DESNZ',
+    detail: 'Battery electric vehicle, average grid carbon intensity.',
+    source: 'EEA / UK DESNZ',
   },
   {
-    mode: 'Average petrol car',
-    factor: `${EMISSION_FACTORS.car}`,
+    mode: 'Petrol Car',
+    factor: EMISSION_FACTORS.car,
     unit: 'g CO₂e / km',
-    detail: 'Solo occupancy baseline, average petrol engine',
+    detail: 'Average petrol vehicle, single occupant (solo driver).',
     source: 'UK DESNZ',
-    badge: 'Baseline',
   },
   {
-    mode: 'Consolidated delivery',
-    factor: `${EMISSION_FACTORS.delivery}`,
+    mode: 'Online Delivery',
+    factor: EMISSION_FACTORS.delivery,
     unit: 'g CO₂e / parcel',
-    detail: 'Flat last-mile baseline, many parcels per route',
-    source: 'Scientific American / MIT',
-    badge: 'Flat per parcel',
+    detail: 'Consolidated last-mile delivery route serving multiple recipients.',
+    source: 'MIT / Scientific American',
   },
 ];
 
 const SOURCES = [
   {
-    title: 'UK DESNZ GHG conversion factors',
-    publisher: 'Department for Energy Security & Net Zero',
-    description:
-      'Official 2025/2026 conversion factors for company reporting, including passenger transport, vehicles and business travel.',
-    href: 'https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2025',
-    label: 'gov.uk · conversion factors',
+    title: 'UK Government GHG Conversion Factors for Company Reporting (2025/2026)',
+    publisher: 'Department for Energy Security and Net Zero (DESNZ)',
+    url: 'https://assets.publishing.service.gov.uk/media/6a2940543b15d05a7ce3202e/2026-GHG-conversion-factors-methodology-report.pdf',
+    note: 'Primary authority for per-passenger-km transport emission factors across road and rail.',
   },
   {
-    title: 'DESNZ conversion factor collection',
-    publisher: 'UK Government',
-    description:
-      'The living collection page — always points to the latest annual factor release and methodology notes.',
-    href: 'https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting',
-    label: 'gov.uk · living collection',
+    title: 'Greenhouse Gas Emission Intensity of Transport in the European Union',
+    publisher: 'European Environment Agency (EEA)',
+    url: 'https://www.eea.europa.eu/data-and-maps/indicators/transport-emissions-greenhouse-gases',
+    note: 'European transit and fleet averages for urban bus, tram, and electric vehicle fleets.',
   },
   {
-    title: 'European Environment Agency',
-    publisher: 'EEA · transport & mobility',
-    description:
-      'EU data on passenger transport emissions, grid intensity and the decarbonisation of road transport.',
-    href: 'https://www.eea.europa.eu/en/topics/in-depth/transport-and-mobility',
-    label: 'eea.europa.eu · transport',
+    title: 'Delivery from Local Store Is Greenest Shopping Method Most of the Time',
+    publisher: 'Scientific American / MIT Center for Transportation & Logistics',
+    url: 'https://www.scientificamerican.com/article/delivery-from-local-store-is-greenest-shopping-method-most-of-the-time1/',
+    note: 'Empirical analysis comparing consolidated delivery van parcel drops against solo car shopping trips.',
   },
   {
-    title: 'How green is online shopping?',
-    publisher: 'Scientific American',
-    description:
-      'Context for the consolidated last-mile delivery baseline, including returns and failed-delivery effects.',
-    href: 'https://www.scientificamerican.com/article/how-green-is-online-shopping/',
-    label: 'scientificamerican.com',
-  },
-  {
-    title: 'MIT Center for Transportation & Logistics',
-    publisher: 'MIT CTL',
-    description:
-      'Research on urban logistics, parcel consolidation and last-mile emissions.',
-    href: 'https://ctl.mit.edu/',
-    label: 'ctl.mit.edu',
+    title: 'OpenStreetMap & Overpass API',
+    publisher: 'OpenStreetMap Foundation',
+    url: 'https://wiki.openstreetmap.org/wiki/Overpass_API',
+    note: 'Open geodata and retail amenity classifications used to identify local physical storefronts.',
   },
 ];
 
 export function Methodology() {
   return (
-    <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-carbon-900 p-5 sm:p-6">
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="section-label">Methodology &amp; sources</p>
-            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-zinc-100 sm:text-4xl">
-              Transparent numbers, not vibes.
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-emerald-100/55">
-              Every comparison in GreenStep uses published per-passenger
-              emission factors. The table below is the exact model the app runs
-              — with direct links to the underlying sources.
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-emerald-400/20 bg-carbon-950/45 px-4 py-3">
-            <ShieldCheck className="h-5 w-5 text-emerald-300" />
-            <div>
-              <p className="text-[11px] text-zinc-400">
-                Data review
-              </p>
-              <p className="text-xs font-bold text-emerald-100/85">
-                2026/2025 factors
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="grid gap-2.5 sm:grid-cols-3">
-        <div className="surface-panel p-4">
-          <div className="flex items-center gap-2 text-emerald-300">
-            <Leaf className="h-4 w-4" />
-            <p className="text-[11px] font-semibold text-zinc-400">
-              Per passenger
-            </p>
-          </div>
-          <p className="mt-2 text-[12px] leading-relaxed text-emerald-100/60">
-            Transit, bus, EV and car figures are grams of CO₂e per
-            passenger-kilometre, not per vehicle.
-          </p>
-        </div>
-        <div className="surface-panel p-4">
-          <div className="flex items-center gap-2 text-cyan-300">
-            <Link2 className="h-4 w-4" />
-            <p className="text-[11px] font-semibold text-zinc-400">
-              Round trip
-            </p>
-          </div>
-          <p className="mt-2 text-[12px] leading-relaxed text-emerald-100/60">
-            Route comparisons double the one-way distance unless an option is
-            marked as a delivery.
-          </p>
-        </div>
-        <div className="surface-panel p-4">
-          <div className="flex items-center gap-2 text-purple-300">
-            <FileText className="h-4 w-4" />
-            <p className="text-[11px] font-semibold text-zinc-400">
-              Flat parcel
-            </p>
-          </div>
-          <p className="mt-2 text-[12px] leading-relaxed text-emerald-100/60">
-            Delivery uses one consolidated baseline per parcel because a single
-            van serves many orders.
-          </p>
-        </div>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 text-ink font-sans space-y-6">
+      {/* Header */}
+      <div className="border-b border-hairline pb-4">
+        <p className="font-mono text-xs uppercase tracking-wider text-ink-muted">
+          Scientific Transparency
+        </p>
+        <h2 className="font-serif text-2xl sm:text-3xl font-bold mt-1">
+          Methodology & Emission Factors
+        </h2>
+        <p className="text-sm text-ink-muted mt-1 leading-relaxed">
+          GreenStep applies published government and academic conversion factors to routed distances. All calculations represent direct and indirect per-passenger greenhouse gas equivalencies (CO₂e).
+        </p>
       </div>
 
-      <section className="surface-panel overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] px-5 py-4">
-          <div>
-            <p className="section-label">Emission factor table</p>
-            <h3 className="mt-1 font-display text-lg font-bold text-zinc-100">
-              What GreenStep calculates with
-            </h3>
-          </div>
-          <span className="pill border-emerald-400/25 bg-emerald-400/10 text-emerald-200">
-            <ShieldCheck className="h-3 w-3" />
-            Verified sources
-          </span>
+      {/* Emission Factor Table */}
+      <div className="bg-surface border border-hairline rounded-sm overflow-hidden">
+        <div className="p-3.5 border-b border-hairline bg-paper/40">
+          <h3 className="font-serif text-sm font-semibold">
+            Conversion Factor Reference Table
+          </h3>
         </div>
-
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left text-[11px]">
-            <thead className="bg-white/[0.03] text-[11px] text-zinc-400">
+          <table className="w-full text-left text-xs divide-y divide-hairline">
+            <thead className="bg-paper/70 font-mono text-[10px] text-ink-muted uppercase tracking-wider">
               <tr>
-                <th className="px-5 py-2.5 font-semibold">Mode</th>
-                <th className="px-3 py-2.5 text-right font-semibold">Factor</th>
-                <th className="px-3 py-2.5 font-semibold">Unit</th>
-                <th className="hidden px-3 py-2.5 font-semibold md:table-cell">
-                  Detail
-                </th>
-                <th className="px-5 py-2.5 font-semibold">Source</th>
+                <th className="p-2.5">Mode</th>
+                <th className="p-2.5">Factor</th>
+                <th className="p-2.5">Details</th>
+                <th className="p-2.5">Authority</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
-              {FACTOR_ROWS.map((row) => (
-                <tr
-                  key={row.mode}
-                  className="transition-colors hover:bg-white/[0.025]"
-                >
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-bold text-emerald-100/80">
-                        {row.mode}
-                      </span>
-                      {row.badge && (
-                        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-200/80">
-                          {row.badge}
-                        </span>
-                      )}
-                    </div>
+            <tbody className="divide-y divide-hairline/60 font-mono text-xs">
+              {FACTORS.map((row) => (
+                <tr key={row.mode}>
+                  <td className="p-2.5 font-sans font-medium text-ink">{row.mode}</td>
+                  <td className="p-2.5 font-bold text-forest">
+                    {row.factor} <span className="text-[10px] font-normal text-ink-muted">{row.unit}</span>
                   </td>
-                  <td className="px-3 py-3 text-right">
-                    <span className="data-value text-sm font-semibold text-emerald-300">
-                      {row.factor}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-zinc-400">{row.unit}</td>
-                  <td className="hidden px-3 py-3 text-zinc-400 md:table-cell">
-                    {row.detail}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className="text-[11px] font-semibold text-emerald-100/55">
-                      {row.source}
-                    </span>
-                  </td>
+                  <td className="p-2.5 font-sans text-ink-muted">{row.detail}</td>
+                  <td className="p-2.5 text-[11px] text-ink-muted">{row.source}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
 
-      <section>
-        <div className="mb-2 flex items-center gap-2 px-1">
-          <BookOpen className="h-3.5 w-3.5 text-emerald-300" />
-          <p className="section-label">Direct sources</p>
+      {/* Core Logic Rules */}
+      <div className="bg-surface p-4 border border-hairline rounded-sm space-y-3">
+        <h3 className="font-serif text-sm font-semibold border-b border-hairline pb-2">
+          Mathematical Formulation
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans leading-relaxed text-ink-muted">
+          <div>
+            <p className="font-medium text-ink mb-1">In-Store Shopping Trips</p>
+            <p className="font-mono text-[11px] text-ink mb-1">
+              Emissions (g) = Distance (round-trip km) × Emission Factor
+            </p>
+            <p>
+              Distance is computed via OpenStreetMap road network routing. Walking and cycling speeds are modeled at 5 km/h and 15 km/h respectively.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-ink mb-1">Online Delivery Baseline</p>
+            <p className="font-mono text-[11px] text-ink mb-1">
+              Emissions (g) = 118 g CO₂e flat per parcel
+            </p>
+            <p>
+              Represents last-mile consolidated delivery where a single van drops 60–120 parcels along an optimized circular drop route, eliminating dedicated round trips.
+            </p>
+          </div>
         </div>
-        <div className="grid gap-2.5 md:grid-cols-2">
-          {SOURCES.map((source) => (
-            <a
-              key={source.href}
-              href={source.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="group surface-panel flex flex-col p-4 transition hover:border-emerald-400/30 hover:bg-white/[0.05]"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-[13px] font-bold text-zinc-100">
-                    {source.title}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-emerald-300/55">
-                    {source.publisher}
-                  </p>
-                </div>
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-zinc-400 transition group-hover:text-emerald-300" />
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
-                {source.description}
+      </div>
+
+      {/* Cited Sources */}
+      <div className="bg-surface border border-hairline rounded-sm p-4 space-y-3">
+        <h3 className="font-serif text-sm font-semibold border-b border-hairline pb-2">
+          Primary Cited Sources
+        </h3>
+        <div className="divide-y divide-hairline/60">
+          {SOURCES.map((src) => (
+            <div key={src.title} className="py-2.5 first:pt-1 last:pb-1">
+              <a
+                href={src.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-baseline justify-between gap-2 text-xs font-serif font-bold text-ink hover:text-forest underline"
+              >
+                <span>{src.title}</span>
+                <ExternalLink className="h-3 w-3 shrink-0 text-ink-muted group-hover:text-forest" />
+              </a>
+              <p className="text-[11px] text-ink-muted font-sans mt-0.5">
+                {src.publisher} — {src.note}
               </p>
-              <p className="mt-3 flex items-center gap-1.5 font-mono text-[11px] text-emerald-300/70">
-                <Link2 className="h-3 w-3" />
-                {source.label}
-              </p>
-            </a>
+            </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      <section className="surface-panel p-5">
-        <div className="flex items-center gap-2">
-          <Info className="h-4 w-4 text-emerald-300" />
-          <h3 className="font-display text-sm font-bold text-zinc-100">
-            Limits of this model
-          </h3>
-        </div>
-        <ul className="mt-3 grid gap-2.5 text-[11px] leading-relaxed text-zinc-400 sm:grid-cols-2">
-          <li className="flex gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-            Real vehicles vary with occupancy, temperature, load, driving style
-            and how electricity is generated.
-          </li>
-          <li className="flex gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" />
-            EV emissions use the average EU grid; charging from pure renewables
-            would lower the figure.
-          </li>
-          <li className="flex gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400" />
-            Delivery excludes returns, packaging and express shipping, all of
-            which can raise the real footprint.
-          </li>
-          <li className="flex gap-2">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-            These are planning estimates, not certified life-cycle assessments.
-            Use them to compare options, not to file a report.
-          </li>
-        </ul>
-      </section>
-
-      <p className="px-1 text-[11px] leading-relaxed text-zinc-400">
-        GreenStep is a campus pilot built for the FAU Nuremberg and Bucharest
-        sustainability workshops. Store locations come from OpenStreetMap;
-        routes come from OSRM. Location is processed on-device.
-      </p>
+      {/* Campus Pilot Line */}
+      <div className="pt-2 text-center text-xs text-ink-muted border-t border-hairline">
+        <p>Concept developed for carbon-reduction workshop in Bucharest, Romania · Pilot testing with FAU Nuremberg data.</p>
+      </div>
     </div>
   );
 }

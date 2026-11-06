@@ -3,7 +3,7 @@ import L from 'leaflet';
 import type { Location, RouteOption, Store } from '../types';
 import { cn } from '../lib/utils';
 import { formatDistance } from '../services/emissionService';
-import { STORE_CATEGORIES, getCategoryLabel } from '../services/storeService';
+import { getCategoryLabel, haversineKm } from '../services/storeService';
 
 interface MapProps {
   userLocation: Location;
@@ -14,7 +14,7 @@ interface MapProps {
   className?: string;
 }
 
-const DEFAULT_PIN_COLOR = '#34d399';
+const FIFTEEN_MIN_WALK_KM = 1.25; // 5 km/h * 15 min
 
 function escapeHtml(value: string): string {
   return value
@@ -25,31 +25,27 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#039;');
 }
 
-function categoryColor(category: string): string {
-  return (
-    STORE_CATEGORIES.find((item) => item.tags.includes(category))?.accent ??
-    DEFAULT_PIN_COLOR
-  );
-}
-
 function createUserIcon(): L.DivIcon {
   return L.divIcon({
-    className: 'greenstep-div-icon',
-    html: '<div class="user-pin"><span></span></div>',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    className: 'paper-div-icon',
+    html: '<div class="paper-user-pin" title="Your origin"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
   });
 }
 
-function createStoreIcon(store: Store, active: boolean): L.DivIcon {
-  const color = categoryColor(store.category);
+function createStoreIcon(store: Store, userLoc: Location, active: boolean): L.DivIcon {
+  const dist = haversineKm(userLoc, store.location);
+  const isInsideWalk = dist <= FIFTEEN_MIN_WALK_KM;
   const initial = escapeHtml(store.name.charAt(0).toUpperCase());
+  const pinClass = isInsideWalk ? 'paper-store-pin-solid' : 'paper-store-pin-hollow';
+  const selectedClass = active ? ' is-selected' : '';
 
   return L.divIcon({
-    className: 'greenstep-div-icon',
-    html: `<div class="store-pin${active ? ' is-active' : ''}" style="--pin-color:${color}"><span>${initial}</span></div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    className: 'paper-div-icon',
+    html: `<div class="${pinClass}${selectedClass}" title="${escapeHtml(store.name)}">${initial}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
   });
 }
 
@@ -64,6 +60,7 @@ export function Map({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const reachRingsLayerRef = useRef<L.LayerGroup | null>(null);
   const storeLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const selectStoreRef = useRef(onSelectStore);
@@ -76,21 +73,18 @@ export function Map({
     const container = containerRef.current;
     if (!container || mapRef.current) return;
 
+    // Paper-tinted OpenStreetMap (keyless, zero watermark, compliant)
     const map = L.map(container, {
       zoomControl: false,
       attributionControl: true,
       preferCanvas: true,
     }).setView([userLocation.lat, userLocation.lon], 14);
 
-    L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20,
-      },
-    ).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -100,11 +94,13 @@ export function Map({
       interactive: false,
     }).addTo(map);
 
+    const reachRingsLayer = L.layerGroup().addTo(map);
     const storeLayer = L.layerGroup().addTo(map);
     const routeLayer = L.layerGroup().addTo(map);
 
     mapRef.current = map;
     userMarkerRef.current = userMarker;
+    reachRingsLayerRef.current = reachRingsLayer;
     storeLayerRef.current = storeLayer;
     routeLayerRef.current = routeLayer;
 
@@ -119,24 +115,61 @@ export function Map({
       map.remove();
       mapRef.current = null;
       userMarkerRef.current = null;
+      reachRingsLayerRef.current = null;
       storeLayerRef.current = null;
       routeLayerRef.current = null;
     };
-    // The map is created once; subsequent updates are handled by effects below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Update user location & reach rings
   useEffect(() => {
     const map = mapRef.current;
     const marker = userMarkerRef.current;
-    if (!map || !marker) return;
+    const ringsLayer = reachRingsLayerRef.current;
+    if (!map || !marker || !ringsLayer) return;
 
     marker.setLatLng([userLocation.lat, userLocation.lon]);
-    map.flyTo([userLocation.lat, userLocation.lon], Math.max(map.getZoom(), 13), {
-      duration: 0.7,
-    });
+
+    // Draw reach rings around origin
+    ringsLayer.clearLayers();
+
+    const ringDefinitions = [
+      { radiusM: 416, label: '5 min walk approx.' },
+      { radiusM: 833, label: '10 min walk approx.' },
+      { radiusM: 1250, label: '15 min walk approx.' },
+      { radiusM: 2500, label: '10 min bike approx.' },
+      { radiusM: 3750, label: '15 min bike approx.' },
+    ];
+
+    for (const ring of ringDefinitions) {
+      const circle = L.circle([userLocation.lat, userLocation.lon], {
+        radius: ring.radiusM,
+        color: '#17211C',
+        weight: 1,
+        opacity: 0.22,
+        fillColor: '#1E4D3B',
+        fillOpacity: ring.radiusM <= 1250 ? 0.02 : 0,
+        dashArray: '3, 4',
+        interactive: false,
+      });
+      circle.addTo(ringsLayer);
+
+      // Label at north edge of ring
+      const latOffset = ring.radiusM / 111139; // ~deg lat per meter
+      const labelMarker = L.marker([userLocation.lat + latOffset, userLocation.lon], {
+        icon: L.divIcon({
+          className: 'paper-div-icon',
+          html: `<div class="text-[9px] font-mono tracking-tight text-ink-muted bg-paper/85 px-1 rounded-sm border border-hairline whitespace-nowrap">${ring.label}</div>`,
+          iconAnchor: [35, 8],
+        }),
+        interactive: false,
+      });
+      labelMarker.addTo(ringsLayer);
+    }
   }, [userLocation.lat, userLocation.lon]);
 
+  // Update store pins
   useEffect(() => {
     const map = mapRef.current;
     const layer = storeLayerRef.current;
@@ -145,19 +178,19 @@ export function Map({
     layer.clearLayers();
 
     for (const store of stores) {
+      const isSelected = selectedStore?.id === store.id;
       const marker = L.marker([store.location.lat, store.location.lon], {
-        icon: createStoreIcon(store, selectedStore?.id === store.id),
+        icon: createStoreIcon(store, userLocation, isSelected),
         riseOnHover: true,
       });
 
       marker.bindPopup(
-        `<div class="map-popup">
-          <p class="map-popup__eyebrow">${escapeHtml(getCategoryLabel(store.category))}</p>
-          <p class="map-popup__title">${escapeHtml(store.name)}</p>
-          <p class="map-popup__meta">${escapeHtml(store.address)}</p>
-          <p class="map-popup__distance">${formatDistance(store.distanceKm)} away</p>
+        `<div class="p-1 font-sans text-xs">
+          <p class="font-serif text-sm font-semibold text-ink">${escapeHtml(store.name)}</p>
+          <p class="text-ink-muted text-[11px]">${escapeHtml(getCategoryLabel(store.category))} · ${escapeHtml(store.address)}</p>
+          <p class="mt-1 font-mono text-[11px] font-medium text-forest">${formatDistance(store.distanceKm)} away</p>
         </div>`,
-        { closeButton: false, offset: [0, -14] },
+        { closeButton: false, offset: [0, -12] },
       );
 
       marker.on('click', () => selectStoreRef.current(store));
@@ -171,10 +204,11 @@ export function Map({
         ),
       );
       bounds.extend([userLocation.lat, userLocation.lon]);
-      map.fitBounds(bounds, { padding: [42, 42], maxZoom: 15 });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     }
-  }, [stores, selectedStore, userLocation.lat, userLocation.lon]);
+  }, [stores, selectedStore, userLocation]);
 
+  // Update route
   useEffect(() => {
     const layer = routeLayerRef.current;
     const map = mapRef.current;
@@ -188,40 +222,31 @@ export function Map({
       ([lat, lon]) => [lat, lon] as [number, number],
     );
 
+    // Single source of truth route in Deep Forest Green
     L.polyline(latLngs, {
-      color: '#03120b',
-      weight: 11,
-      opacity: 0.65,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(layer);
-
-    L.polyline(latLngs, {
-      color: activeRoute.color,
-      weight: 4.5,
+      color: '#1E4D3B',
+      weight: 3.5,
       opacity: 0.95,
       lineCap: 'round',
       lineJoin: 'round',
-      dashArray: '1 0',
     }).addTo(layer);
 
     if (selectedStore) {
       const bounds = L.latLngBounds(latLngs);
       bounds.extend([userLocation.lat, userLocation.lon]);
       bounds.extend([selectedStore.location.lat, selectedStore.location.lon]);
-      map.fitBounds(bounds, { padding: [54, 54], maxZoom: 15 });
+      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
     }
   }, [activeRoute, selectedStore, userLocation.lat, userLocation.lon]);
 
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-3xl border border-emerald-400/15 bg-carbon-900 shadow-panel',
+        'relative h-full w-full border border-hairline bg-surface overflow-hidden',
         className,
       )}
     >
       <div ref={containerRef} className="h-full w-full" />
-      <div className="pointer-events-none absolute inset-0 z-[390] rounded-3xl ring-1 ring-inset ring-white/5" />
     </div>
   );
 }

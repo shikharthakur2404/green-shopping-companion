@@ -1,384 +1,376 @@
-import { useMemo, useState, type CSSProperties } from 'react';
-import {
-  Bike,
-  Bus,
-  Car,
-  Footprints,
-  Gauge,
-  Info,
-  Leaf,
-  Package,
-  Scale,
-  Sparkles,
-  TrainFront,
-  Truck,
-  Zap,
-} from 'lucide-react';
-import type { ModeIconName, TransportModeId } from '../types';
-import {
-  EMISSION_FACTORS,
-  calculateEmissions,
-  formatDuration,
-  formatEmissions,
-  getTransportMode,
-} from '../services/emissionService';
-
-interface CalculatorMode {
-  id: TransportModeId;
-  label: string;
-  icon: ModeIconName;
-  factorLabel: string;
-}
-
-const CALCULATOR_MODES: CalculatorMode[] = [
-  {
-    id: 'walk',
-    label: 'Walking',
-    icon: 'walk',
-    factorLabel: '0 g / passenger-km',
-  },
-  {
-    id: 'bike',
-    label: 'Cycling',
-    icon: 'bike',
-    factorLabel: '0 g / passenger-km',
-  },
-  {
-    id: 'ebike',
-    label: 'E-Bike',
-    icon: 'bike',
-    factorLabel: '0 g / passenger-km',
-  },
-  {
-    id: 'train',
-    label: 'Public transit',
-    icon: 'train',
-    factorLabel: `${EMISSION_FACTORS.train} g / passenger-km`,
-  },
-  {
-    id: 'ev',
-    label: 'Electric vehicle',
-    icon: 'zap',
-    factorLabel: `${EMISSION_FACTORS.ev} g / km`,
-  },
-  {
-    id: 'car',
-    label: 'Petrol car',
-    icon: 'car',
-    factorLabel: `${EMISSION_FACTORS.car} g / km`,
-  },
-  {
-    id: 'delivery',
-    label: 'Online delivery',
-    icon: 'package',
-    factorLabel: `${EMISSION_FACTORS.delivery} g / parcel`,
-  },
-];
-
-function ModeIcon({
-  icon,
-  className,
-}: {
-  icon: ModeIconName;
-  className?: string;
-}) {
-  const icons = {
-    walk: Footprints,
-    bike: Bike,
-    train: TrainFront,
-    bus: Bus,
-    zap: Zap,
-    car: Car,
-    package: Package,
-  } as const;
-
-  const Icon = icons[icon] ?? Footprints;
-  return <Icon className={className} />;
-}
+import { useMemo, useState } from 'react';
+import { EMISSION_FACTORS } from '../services/emissionService';
 
 export function CarbonCalculator() {
-  const [distanceKm, setDistanceKm] = useState(3);
+  const [distanceKm, setDistanceKm] = useState<number>(3.0);
 
-  const rows = useMemo(
-    () =>
-      CALCULATOR_MODES.map((entry) => {
-        const mode = getTransportMode(entry.id);
-        const emissions = calculateEmissions(entry.id, distanceKm);
-        const durationMinutes =
-          entry.id === 'delivery'
-            ? 24 * 60
-            : (distanceKm / Math.max(mode.speedKmh, 1)) * 60 + mode.waitMinutes;
-        return { ...entry, mode, emissions, durationMinutes };
-      }),
-    [distanceKm],
-  );
+  // Delivery baseline is flat 118 g CO2e per parcel
+  const deliveryGrams = EMISSION_FACTORS.delivery;
 
-  const maxEmissions = Math.max(...rows.map((row) => row.emissions), 1);
-  const carRow = rows.find((row) => row.id === 'car');
-  const deliveryRow = rows.find((row) => row.id === 'delivery');
-  const transitRow = rows.find((row) => row.id === 'train');
-  const carEmissions = carRow?.emissions ?? 0;
-  const deliveryEmissions = deliveryRow?.emissions ?? 0;
-  const transitEmissions = transitRow?.emissions ?? 0;
-  const deliveryBeatsCar = deliveryEmissions < carEmissions;
-  const deliveryBeatsTransit = deliveryEmissions < transitEmissions;
-  const carDelta = Math.abs(carEmissions - deliveryEmissions);
-  const transitDelta = Math.abs(transitEmissions - deliveryEmissions);
-  const sliderProgress = ((distanceKm - 1) / 19) * 100;
+  // Compute emissions at current round-trip distance
+  const currentEmissions = useMemo(() => {
+    return {
+      walk: 0,
+      bike: 0,
+      tram: Math.round(EMISSION_FACTORS.train * distanceKm),
+      bus: Math.round(EMISSION_FACTORS.bus * distanceKm),
+      ev: Math.round(EMISSION_FACTORS.ev * distanceKm),
+      car: Math.round(EMISSION_FACTORS.car * distanceKm),
+      delivery: deliveryGrams,
+    };
+  }, [distanceKm, deliveryGrams]);
+
+  // Compute break-even crossover distance with online delivery (118 g)
+  const breakEvens = useMemo(() => {
+    return {
+      car: Number((deliveryGrams / EMISSION_FACTORS.car).toFixed(2)), // ~0.69 km
+      bus: Number((deliveryGrams / EMISSION_FACTORS.bus).toFixed(2)), // ~1.33 km
+      ev: Number((deliveryGrams / EMISSION_FACTORS.ev).toFixed(2)),   // ~2.62 km
+      tram: Number((deliveryGrams / EMISSION_FACTORS.train).toFixed(2)), // ~4.07 km
+    };
+  }, [deliveryGrams]);
+
+  // Dynamic editorial headline
+  const headline = useMemo(() => {
+    if (distanceKm <= 0.69) {
+      return `At ${distanceKm.toFixed(1)} km round trip, every local option beats online delivery.`;
+    }
+    if (distanceKm <= 1.33) {
+      return `At ${distanceKm.toFixed(1)} km round trip, walking, biking, transit, and EV beat delivery; driving a petrol car emits more than the courier.`;
+    }
+    if (distanceKm <= 4.07) {
+      return `At ${distanceKm.toFixed(1)} km round trip, the tram and EV still beat delivery; the petrol car and bus don't.`;
+    }
+    return `At ${distanceKm.toFixed(1)} km round trip, consolidated delivery beats driving and bus travel; walking and cycling remain zero.`;
+  }, [distanceKm]);
+
+  // Chart plotting math (SVG)
+  const maxDistance = 12; // 0 to 12 km x-axis
+  const maxGrams = 1400; // y-axis up to 1400 g CO2e
+  const width = 580;
+  const height = 280;
+  const padLeft = 52;
+  const padBottom = 34;
+  const padTop = 20;
+  const padRight = 24;
+
+  const chartW = width - padLeft - padRight;
+  const chartH = height - padTop - padBottom;
+
+  const toX = (km: number) => padLeft + (Math.min(km, maxDistance) / maxDistance) * chartW;
+  const toY = (g: number) => padTop + chartH - (Math.min(g, maxGrams) / maxGrams) * chartH;
+
+  const deliveryY = toY(deliveryGrams);
+  const cursorX = toX(distanceKm);
 
   return (
-    <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-3xl border border-emerald-400/20 bg-carbon-900 p-5 sm:p-6">
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-xl">
-            <p className="section-label">Carbon calculator</p>
-            <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-zinc-100 sm:text-4xl">
-              Put every option on the same scale.
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-emerald-100/55">
-              Drag the distance to see how walking, cycling, public transit, an
-              EV, a petrol car and a consolidated parcel actually compare.
-            </p>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            <div className="rounded-2xl border border-white/10 bg-carbon-950/50 px-4 py-3">
-              <p className="text-[11px] text-zinc-400">
-                One-way
-              </p>
-              <p className="data-value mt-1 text-2xl font-semibold text-emerald-300">
-                {distanceKm.toFixed(distanceKm % 1 === 0 ? 0 : 1)}
-                <span className="ml-1 text-sm text-zinc-400">km</span>
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-carbon-950/50 px-4 py-3">
-              <p className="text-[11px] text-zinc-400">
-                Round trip
-              </p>
-              <p className="data-value mt-1 text-2xl font-semibold text-emerald-100/80">
-                {(distanceKm * 2).toFixed(distanceKm % 1 === 0 ? 0 : 1)}
-                <span className="ml-1 text-sm text-zinc-400">km</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 text-ink font-sans space-y-6">
+      {/* Title & Live Sentence */}
+      <div className="border-b border-hairline pb-4">
+        <p className="font-mono text-xs uppercase tracking-wider text-ink-muted">
+          Break-Even Carbon Analysis
+        </p>
+        <h2 className="font-serif text-2xl sm:text-3xl font-bold mt-1 leading-tight">
+          When does delivery beat going to the store?
+        </h2>
+        <p className="font-serif text-base sm:text-lg text-forest font-semibold mt-2 leading-snug">
+          {headline}
+        </p>
+      </div>
 
-      <section className="surface-panel p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
-              <Gauge className="h-4 w-4" />
-            </span>
-            <div>
-              <p className="text-sm font-bold text-zinc-100">Trip distance</p>
-              <p className="text-[11px] text-zinc-400">
-                One-way shopping trip · 1 to 20 km
-              </p>
-            </div>
-          </div>
-          <span className="pill border-emerald-400/25 bg-emerald-400/10 text-emerald-200">
-            <Sparkles className="h-3 w-3" />
-            Live calculation
+      {/* Interactive Distance Slider */}
+      <div className="bg-surface p-4 border border-hairline rounded-sm space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <label htmlFor="break-even-slider" className="font-medium text-ink">
+            Round-trip shopping distance
+          </label>
+          <span className="font-mono text-base font-bold text-ink">
+            {distanceKm.toFixed(1)} km
           </span>
         </div>
-
-        <div className="mt-5">
-          <input
-            type="range"
-            min={1}
-            max={20}
-            step={0.5}
-            value={distanceKm}
-            onChange={(event) => setDistanceKm(Number(event.target.value))}
-            className="distance-slider"
-            style={{ '--slider-progress': `${sliderProgress}%` } as CSSProperties}
-            aria-label="Trip distance in kilometres"
-          />
-          <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-zinc-400">
-            <span>1 km</span>
-            <span>5 km</span>
-            <span>10 km</span>
-            <span>15 km</span>
-            <span>20 km</span>
-          </div>
-        </div>
-      </section>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="surface-panel p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="section-label">Side by side</p>
-              <h3 className="mt-1 font-display text-lg font-bold text-zinc-100">
-                Emissions for this trip
-              </h3>
-            </div>
-            <span className="hidden items-center gap-1.5 text-[11px] text-zinc-400 sm:flex">
-              <Scale className="h-3.5 w-3.5" />
-              Bars scaled to the highest emitter
-            </span>
-          </div>
-
-          <div className="mt-5 space-y-4">
-            {rows.map((row) => {
-              const width =
-                row.emissions <= 0
-                  ? 0
-                  : Math.max((row.emissions / maxEmissions) * 100, 1.5);
-              return (
-                <div key={row.id}>
-                  <div className="flex items-end justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border"
-                        style={{
-                          borderColor: `${row.mode.color}45`,
-                          backgroundColor: `${row.mode.color}14`,
-                          color: row.mode.color,
-                        }}
-                      >
-                        <ModeIcon icon={row.icon} className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-bold text-zinc-100">
-                          {row.label}
-                        </p>
-                        <p className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                          <span>{row.factorLabel}</span>
-                          <span className="text-emerald-100/15">·</span>
-                          <span>
-                            {formatDuration(
-                              row.id === 'delivery'
-                                ? row.durationMinutes
-                                : (distanceKm / row.mode.speedKmh) * 60 +
-                                    row.mode.waitMinutes,
-                            )}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                    <p
-                      className="data-value shrink-0 text-sm font-semibold"
-                      style={{ color: row.mode.color }}
-                    >
-                      {row.emissions <= 0
-                        ? '0 g'
-                        : formatEmissions(row.emissions)}
-                    </p>
-                  </div>
-                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/5">
-                    <div
-                      className="h-full rounded-full transition-all duration-500 ease-out"
-                      style={{
-                        width: `${width}%`,
-                        backgroundColor: row.mode.color,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <div className="space-y-4">
-          <section className="relative overflow-hidden rounded-3xl border border-purple-300/20 bg-carbon-900 p-5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-purple-300/25 bg-purple-300/10 text-purple-200">
-                <Truck className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[11px] font-semibold text-purple-200/70">
-                  Honest comparison
-                </p>
-                <p className="font-display text-sm font-bold text-zinc-100">
-                  {deliveryBeatsCar
-                    ? 'Local delivery beats the solo car trip'
-                    : 'The solo car trip is lower here'}
-                </p>
-              </div>
-            </div>
-
-            <p className="mt-4 font-display text-xl font-bold leading-snug text-zinc-100">
-              {deliveryBeatsCar
-                ? `A consolidated parcel saves ${formatEmissions(carDelta)} versus driving ${distanceKm.toFixed(1)} km.`
-                : `A consolidated parcel emits ${formatEmissions(carDelta)} more than this car trip.`}
-            </p>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-white/10 bg-carbon-950/40 p-2.5">
-                <p className="text-[11px] text-rose-200/60">
-                  Petrol car
-                </p>
-                <p className="data-value mt-1 text-sm font-semibold text-rose-200">
-                  {formatEmissions(carEmissions)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-carbon-950/40 p-2.5">
-                <p className="text-[11px] text-purple-200/60">
-                  Parcel
-                </p>
-                <p className="data-value mt-1 text-sm font-semibold text-purple-200">
-                  {formatEmissions(deliveryEmissions)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-carbon-950/40 p-2.5">
-                <p className="text-[11px] text-cyan-200/60">
-                  Transit
-                </p>
-                <p className="data-value mt-1 text-sm font-semibold text-cyan-200">
-                  {formatEmissions(transitEmissions)}
-                </p>
-              </div>
-            </div>
-
-            <p className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-zinc-400">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-200/70" />
-              <span>
-                {deliveryBeatsTransit
-                  ? `Even so, public transit is ${formatEmissions(transitDelta)} lower than the parcel. Walking or cycling stays at zero.`
-                  : 'Public transit is higher than the parcel on this trip, but walk, cycle or e-bike remains zero-carbon.'}{' '}
-                Returns, failed deliveries and express shipping can erase the
-                parcel saving.
-              </span>
-            </p>
-          </section>
-
-          <section className="surface-panel p-5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
-                <Leaf className="h-4 w-4" />
-              </span>
-              <p className="text-sm font-bold text-zinc-100">
-                What this means
-              </p>
-            </div>
-            <ul className="mt-3 space-y-2.5 text-[11px] leading-relaxed text-zinc-400">
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-                Walking, cycling and e-bikes emit zero tailpipe CO₂e for the
-                whole 1–20 km range.
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" />
-                Public transit is {formatEmissions(EMISSION_FACTORS.car - EMISSION_FACTORS.train)}
-                {' '}lower per passenger-km than an average petrol car.
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-lime-400" />
-                Delivery is a flat 118 g per parcel because one van carries many
-                orders — distance alone does not tell the whole story.
-              </li>
-            </ul>
-          </section>
+        <input
+          id="break-even-slider"
+          type="range"
+          min={0.5}
+          max={12}
+          step={0.1}
+          value={distanceKm}
+          onChange={(e) => setDistanceKm(parseFloat(e.target.value))}
+          className="paper-slider"
+        />
+        <div className="flex justify-between text-[10px] font-mono text-ink-muted">
+          <span>0.5 km (neighborhood shop)</span>
+          <span>5 km (cross-town retail)</span>
+          <span>12 km (suburban center)</span>
         </div>
       </div>
 
-      <p className="px-1 text-[11px] leading-relaxed text-zinc-400">
-        Factors: UK DESNZ GHG conversion factors (2025/2026), EEA average EU
-        grid intensity for EVs, and a consolidated last-mile parcel baseline
-        (Scientific American / MIT). Estimates, not certified measurements.
-      </p>
+      {/* SVG Break-Even Chart */}
+      <div className="bg-surface p-4 border border-hairline rounded-sm overflow-x-auto">
+        <div className="min-w-[500px]">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-auto text-ink overflow-visible"
+            role="img"
+            aria-label="Break-even chart comparing transport mode emissions with online delivery"
+          >
+            {/* Grid Rules */}
+            {[200, 400, 600, 800, 1000, 1200].map((g) => (
+              <line
+                key={g}
+                x1={padLeft}
+                y1={toY(g)}
+                x2={width - padRight}
+                y2={toY(g)}
+                stroke="rgba(23, 33, 28, 0.08)"
+                strokeWidth="1"
+              />
+            ))}
+
+            {/* Axes */}
+            <line
+              x1={padLeft}
+              y1={padTop}
+              x2={padLeft}
+              y2={height - padBottom}
+              stroke="rgba(23, 33, 28, 0.25)"
+              strokeWidth="1"
+            />
+            <line
+              x1={padLeft}
+              y1={height - padBottom}
+              x2={width - padRight}
+              y2={height - padBottom}
+              stroke="rgba(23, 33, 28, 0.25)"
+              strokeWidth="1"
+            />
+
+            {/* Y-axis Ticks */}
+            {[0, 200, 600, 1000, 1400].map((g) => (
+              <text
+                key={g}
+                x={padLeft - 6}
+                y={toY(g) + 3}
+                textAnchor="end"
+                className="text-[9px] font-mono fill-ink-muted"
+              >
+                {g}g
+              </text>
+            ))}
+
+            {/* X-axis Ticks */}
+            {[0, 2, 4, 6, 8, 10, 12].map((km) => (
+              <text
+                key={km}
+                x={toX(km)}
+                y={height - padBottom + 16}
+                textAnchor="middle"
+                className="text-[9px] font-mono fill-ink-muted"
+              >
+                {km} km
+              </text>
+            ))}
+
+            {/* Flat Delivery Baseline (118 g) */}
+            <line
+              x1={padLeft}
+              y1={deliveryY}
+              x2={width - padRight}
+              y2={deliveryY}
+              stroke="#5E6A63"
+              strokeWidth="1.5"
+              strokeDasharray="4, 3"
+            />
+            <text
+              x={width - padRight}
+              y={deliveryY - 5}
+              textAnchor="end"
+              className="text-[10px] font-mono font-medium fill-ink-muted"
+            >
+              Consolidated delivery (118 g CO₂e)
+            </text>
+
+            {/* Petrol Car Line (171 g/km) */}
+            <line
+              x1={toX(0)}
+              y1={toY(0)}
+              x2={toX(maxDistance)}
+              y2={toY(171 * maxDistance)}
+              stroke="#D8452A"
+              strokeWidth="2"
+            />
+            <text
+              x={toX(7.2)}
+              y={toY(171 * 7.2) - 6}
+              className="text-[9px] font-mono font-bold fill-vermilion"
+            >
+              Petrol car (171 g/km)
+            </text>
+
+            {/* City Bus Line (89 g/km) */}
+            <line
+              x1={toX(0)}
+              y1={toY(0)}
+              x2={toX(maxDistance)}
+              y2={toY(89 * maxDistance)}
+              stroke="#17211C"
+              strokeWidth="1.5"
+            />
+
+            {/* EV Line (45 g/km) */}
+            <line
+              x1={toX(0)}
+              y1={toY(0)}
+              x2={toX(maxDistance)}
+              y2={toY(45 * maxDistance)}
+              stroke="#5E6A63"
+              strokeWidth="1.5"
+            />
+
+            {/* Tram Line (29 g/km) */}
+            <line
+              x1={toX(0)}
+              y1={toY(0)}
+              x2={toX(maxDistance)}
+              y2={toY(29 * maxDistance)}
+              stroke="#1E4D3B"
+              strokeWidth="1.5"
+            />
+
+            {/* Walk / Bike Line (0 g/km) */}
+            <line
+              x1={toX(0)}
+              y1={toY(0)}
+              x2={toX(maxDistance)}
+              y2={toY(0)}
+              stroke="#1E4D3B"
+              strokeWidth="2.5"
+            />
+            <text
+              x={toX(9)}
+              y={toY(0) - 5}
+              className="text-[9px] font-mono font-bold fill-forest"
+            >
+              Walk & Bike (0 g)
+            </text>
+
+            {/* Crossover Annotations */}
+            <circle cx={toX(breakEvens.car)} cy={deliveryY} r={3.5} fill="#D8452A" />
+            <text
+              x={toX(breakEvens.car) + 4}
+              y={deliveryY + 12}
+              className="text-[8px] font-mono fill-vermilion font-medium"
+            >
+              Car crosses: 0.7 km
+            </text>
+
+            <circle cx={toX(breakEvens.bus)} cy={deliveryY} r={3} fill="#17211C" />
+            <text
+              x={toX(breakEvens.bus) + 4}
+              y={deliveryY + 22}
+              className="text-[8px] font-mono fill-ink font-medium"
+            >
+              Bus crosses: 1.3 km
+            </text>
+
+            <circle cx={toX(breakEvens.tram)} cy={deliveryY} r={3} fill="#1E4D3B" />
+            <text
+              x={toX(breakEvens.tram) + 4}
+              y={deliveryY - 8}
+              className="text-[8px] font-mono fill-forest font-medium"
+            >
+              Tram crosses: 4.1 km
+            </text>
+
+            {/* Vertical Distance Cursor */}
+            <line
+              x1={cursorX}
+              y1={padTop}
+              x2={cursorX}
+              y2={height - padBottom}
+              stroke="#17211C"
+              strokeWidth="1.5"
+              strokeDasharray="2, 2"
+            />
+            <circle cx={cursorX} cy={toY(currentEmissions.car)} r={4} fill="#D8452A" />
+            <circle cx={cursorX} cy={toY(currentEmissions.tram)} r={4} fill="#1E4D3B" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Numerical Data Table */}
+      <div className="border border-hairline rounded-sm overflow-hidden bg-surface">
+        <table className="w-full text-left text-xs divide-y divide-hairline">
+          <thead className="bg-paper/70 font-mono text-[10px] text-ink-muted uppercase tracking-wider">
+            <tr>
+              <th className="p-2.5">Mode</th>
+              <th className="p-2.5">Per-KM Factor</th>
+              <th className="p-2.5 text-right">At {distanceKm.toFixed(1)} km</th>
+              <th className="p-2.5 text-right">Status vs. Delivery</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-hairline/60 font-mono text-xs">
+            <tr>
+              <td className="p-2.5 font-sans font-medium text-forest">Walking / Cycling</td>
+              <td className="p-2.5 text-ink-muted">0 g CO₂e/km</td>
+              <td className="p-2.5 text-right font-bold text-forest">0 g CO₂e</td>
+              <td className="p-2.5 text-right text-forest">Beats delivery (saves 118 g)</td>
+            </tr>
+            <tr>
+              <td className="p-2.5 font-sans font-medium text-forest">Tram / Light Rail</td>
+              <td className="p-2.5 text-ink-muted">29 g CO₂e/km</td>
+              <td className="p-2.5 text-right text-ink">{currentEmissions.tram} g CO₂e</td>
+              <td className="p-2.5 text-right">
+                {currentEmissions.tram < deliveryGrams ? (
+                  <span className="text-forest">Beats delivery (−{deliveryGrams - currentEmissions.tram} g)</span>
+                ) : (
+                  <span className="text-ink-muted">Delivery wins (+{currentEmissions.tram - deliveryGrams} g)</span>
+                )}
+              </td>
+            </tr>
+            <tr>
+              <td className="p-2.5 font-sans font-medium">Electric Car (EV)</td>
+              <td className="p-2.5 text-ink-muted">45 g CO₂e/km</td>
+              <td className="p-2.5 text-right text-ink">{currentEmissions.ev} g CO₂e</td>
+              <td className="p-2.5 text-right">
+                {currentEmissions.ev < deliveryGrams ? (
+                  <span className="text-forest">Beats delivery (−{deliveryGrams - currentEmissions.ev} g)</span>
+                ) : (
+                  <span className="text-ink-muted">Delivery wins (+{currentEmissions.ev - deliveryGrams} g)</span>
+                )}
+              </td>
+            </tr>
+            <tr>
+              <td className="p-2.5 font-sans font-medium">City Bus</td>
+              <td className="p-2.5 text-ink-muted">89 g CO₂e/km</td>
+              <td className="p-2.5 text-right text-ink">{currentEmissions.bus} g CO₂e</td>
+              <td className="p-2.5 text-right">
+                {currentEmissions.bus < deliveryGrams ? (
+                  <span className="text-forest">Beats delivery (−{deliveryGrams - currentEmissions.bus} g)</span>
+                ) : (
+                  <span className="text-ink-muted">Delivery wins (+{currentEmissions.bus - deliveryGrams} g)</span>
+                )}
+              </td>
+            </tr>
+            <tr className="bg-vermilion/5">
+              <td className="p-2.5 font-sans font-semibold text-vermilion">Petrol Car (1 Person)</td>
+              <td className="p-2.5 text-ink-muted">171 g CO₂e/km</td>
+              <td className="p-2.5 text-right font-bold text-vermilion">{currentEmissions.car} g CO₂e</td>
+              <td className="p-2.5 text-right text-vermilion font-medium">
+                {currentEmissions.car > deliveryGrams
+                  ? `Delivery wins (+${currentEmissions.car - deliveryGrams} g excess)`
+                  : 'Car marginally beats delivery'}
+              </td>
+            </tr>
+            <tr className="bg-paper/40">
+              <td className="p-2.5 font-sans font-medium text-ink-muted">Online Delivery (Consolidated)</td>
+              <td className="p-2.5 text-ink-muted">118 g flat</td>
+              <td className="p-2.5 text-right font-bold text-ink">118 g CO₂e</td>
+              <td className="p-2.5 text-right text-ink-muted">Standard baseline</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

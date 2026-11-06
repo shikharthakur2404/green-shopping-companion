@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,335 +6,307 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    --color-paper: #F4F0E6;
+    --color-surface: #FBF9F3;
+    --color-ink: #17211C;
+    --color-ink-muted: #5E6A63;
+    --color-hairline: rgba(23, 33, 28, 0.14);
+    --color-forest: #1E4D3B;
+    --color-vermilion: #D8452A;
+    --color-highlighter: #F6E05E;
+    color-scheme: light;
   }
 
   html,
   body,
   #root {
     min-height: 100%;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
   }
 
   body {
-    @apply bg-carbon-950 text-emerald-50 antialiased;
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    line-height: 1.6;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1,
   h2,
-  h3 {
-    font-family: 'Outfit', sans-serif;
+  h3,
+  .font-serif {
+    font-family: 'Fraunces', Georgia, serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
-  ::selection {
-    background: rgba(52, 211, 153, 0.3);
-    color: #ecfdf5;
+  .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
   }
 
   *:focus-visible {
-    outline: 2px solid rgba(52, 211, 153, 0.6);
+    outline: 1.5px solid var(--color-ink);
     outline-offset: 2px;
   }
 }
 
-@layer components {
-  .surface-panel {
-    @apply rounded-2xl border border-white/[0.08] bg-carbon-900;
-  }
+/* ------------------------------------------------------------------ */
+/* Receipt torn / sawtooth bottom edge                                */
+/* ------------------------------------------------------------------ */
 
-  .section-label {
-    @apply text-xs font-medium leading-relaxed text-zinc-400;
-  }
-
-  .data-value {
-    @apply font-mono tabular-nums tracking-tight;
-  }
-
-  .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold;
-  }
+.receipt-sheet {
+  position: relative;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-bottom: none;
 }
 
-
-.greenstep-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(52, 211, 153, 0.25) transparent;
+.receipt-teeth {
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  right: -1px;
+  height: 8px;
+  background-image: 
+    linear-gradient(135deg, var(--color-surface) 4px, transparent 0),
+    linear-gradient(-135deg, var(--color-surface) 4px, transparent 0);
+  background-position: left top;
+  background-repeat: repeat-x;
+  background-size: 8px 8px;
 }
 
-.greenstep-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.greenstep-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.greenstep-scroll::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(52, 211, 153, 0.22);
-}
-
-.greenstep-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(52, 211, 153, 0.38);
-}
-
-/* Distance slider ---------------------------------------------------- */
-
-.distance-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 10px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    #34d399 0%,
-    #34d399 var(--slider-progress, 20%),
-    rgba(255, 255, 255, 0.08) var(--slider-progress, 20%),
-    rgba(255, 255, 255, 0.08) 100%
-  );
-  outline: none;
-}
-
-.distance-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 26px;
-  width: 26px;
-  border-radius: 999px;
-  background: #ecfdf5;
-  border: 5px solid #10b981;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  cursor: grab;
-  transition: transform 0.15s ease;
-}
-
-.distance-slider::-webkit-slider-thumb:active {
-  cursor: grabbing;
-  transform: scale(1.08);
-}
-
-.distance-slider::-moz-range-thumb {
-  height: 22px;
-  width: 22px;
-  border-radius: 999px;
-  background: #ecfdf5;
-  border: 5px solid #10b981;
-  box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.16);
-  cursor: grab;
-}
-
-.distance-slider::-moz-range-track {
-  height: 10px;
-  border-radius: 999px;
-  background: transparent;
+.receipt-teeth-border {
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  right: -1px;
+  height: 8px;
+  pointer-events: none;
+  background-image:
+    linear-gradient(135deg, var(--color-hairline) 5px, transparent 0),
+    linear-gradient(-135deg, var(--color-hairline) 5px, transparent 0);
+  background-position: left top;
+  background-repeat: repeat-x;
+  background-size: 8px 8px;
+  z-index: -1;
 }
 
 /* ------------------------------------------------------------------ */
-/* Leaflet dark theme                                              */
+/* Leaflet paper map styling                                          */
 /* ------------------------------------------------------------------ */
 
 .leaflet-container {
-  background: #07120d;
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: #EFE9DC !important;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
   outline: none;
 }
 
-.leaflet-container a {
-  color: #34d399;
+/* Mute and warm the basemap tiles to match paper */
+.leaflet-tile-pane {
+  filter: sepia(0.28) contrast(0.96) brightness(0.97) saturate(0.82);
 }
 
 .leaflet-control-attribution {
-  background: rgba(4, 16, 10, 0.78) !important;
-  color: rgba(167, 243, 208, 0.5) !important;
+  background: rgba(244, 240, 230, 0.88) !important;
+  color: #5E6A63 !important;
   font-size: 9px !important;
   padding: 2px 6px !important;
-  border-top-left-radius: 8px;
-  backdrop-filter: blur(8px);
+  border: 1px solid rgba(23, 33, 28, 0.12) !important;
+  border-bottom: none !important;
+  border-right: none !important;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
 }
 
 .leaflet-control-attribution a {
-  color: rgba(110, 231, 183, 0.7) !important;
+  color: #1E4D3B !important;
+  text-decoration: underline;
 }
 
 .leaflet-bar {
-  border: 1px solid rgba(52, 211, 153, 0.18) !important;
-  border-radius: 12px !important;
+  border: 1px solid rgba(23, 33, 28, 0.16) !important;
+  border-radius: 4px !important;
   overflow: hidden;
-  box-shadow: 0 12px 30px -16px rgba(0, 0, 0, 0.9) !important;
+  box-shadow: 0 1px 3px rgba(23, 33, 28, 0.08) !important;
 }
 
-.leaflet-bar a,
-.leaflet-bar a:hover {
-  background: rgba(7, 22, 14, 0.92);
-  color: #6ee7b7;
-  border-bottom-color: rgba(52, 211, 153, 0.12);
-  backdrop-filter: blur(8px);
+.leaflet-bar a {
+  background: #FBF9F3 !important;
+  color: #17211C !important;
+  border-bottom: 1px solid rgba(23, 33, 28, 0.12) !important;
 }
 
 .leaflet-bar a:hover {
-  background: rgba(16, 48, 33, 0.95);
+  background: #F4F0E6 !important;
+  color: #1E4D3B !important;
 }
 
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: #0a1c13;
-  color: #d1fae5;
-  border: 1px solid rgba(52, 211, 153, 0.18);
-  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.9);
-}
-
-.leaflet-popup-content-wrapper {
-  border-radius: 14px;
+  background: #FBF9F3 !important;
+  color: #17211C !important;
+  border: 1px solid rgba(23, 33, 28, 0.16) !important;
+  box-shadow: 0 4px 12px rgba(23, 33, 28, 0.08) !important;
+  border-radius: 4px !important;
 }
 
 .leaflet-popup-content {
-  margin: 10px 12px;
-  min-width: 160px;
+  margin: 10px 12px !important;
+  line-height: 1.4 !important;
 }
 
-.map-popup__eyebrow {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: normal;
-  color: rgba(110, 231, 183, 0.65);
-}
+/* ------------------------------------------------------------------ */
+/* Paper Map Pins                                                     */
+/* ------------------------------------------------------------------ */
 
-.map-popup__title {
-  margin: 3px 0 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ecfdf5;
-}
-
-.map-popup__meta {
-  margin: 4px 0 0;
-  font-size: 10px;
-  line-height: 1.4;
-  color: rgba(209, 250, 229, 0.45);
-}
-
-.map-popup__distance {
-  font-family: 'JetBrains Mono', monospace;
-  font-variant-numeric: tabular-nums;
-  margin: 5px 0 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: #34d399;
-}
-
-/* Map markers ------------------------------------------------------- */
-
-.greenstep-div-icon {
+.paper-div-icon {
   background: transparent;
   border: none;
 }
 
-.user-pin {
-  position: relative;
+/* User pin: clean compass ring */
+.paper-user-pin {
   display: flex;
-  height: 30px;
-  width: 30px;
   align-items: center;
   justify-content: center;
+  height: 20px;
+  width: 20px;
+  border-radius: 9999px;
+  background: #17211C;
+  border: 2px solid #FBF9F3;
+  box-shadow: 0 1px 4px rgba(23, 33, 28, 0.25);
 }
 
-.user-pin::before {
+.paper-user-pin::after {
   content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: rgba(52, 211, 153, 0.3);
-
+  height: 4px;
+  width: 4px;
+  border-radius: 9999px;
+  background: #F4F0E6;
 }
 
-.user-pin span {
-  position: relative;
-  height: 15px;
-  width: 15px;
-  border-radius: 999px;
-  background: #6ee7b7;
-  border: 3px solid #04120b;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-@keyframes user-pulse {
-  0% {
-    transform: scale(0.65);
-    opacity: 0.9;
-  }
-  80%,
-  100% {
-    transform: scale(2.1);
-    opacity: 0;
-  }
-}
-
-.store-pin {
+/* Solid pin (inside walk ring) */
+.paper-store-pin-solid {
   display: flex;
-  height: 32px;
-  width: 32px;
   align-items: center;
   justify-content: center;
-  border-radius: 11px;
-  background: var(--pin-color, #34d399);
-  border: 2px solid rgba(4, 18, 11, 0.92);
-  color: #04120b;
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
+  height: 24px;
+  width: 24px;
+  border-radius: 4px;
+  background: #17211C;
+  color: #FBF9F3;
+  border: 1.5px solid #FBF9F3;
+  font-family: 'Fraunces', serif;
+  font-size: 11px;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+  box-shadow: 0 1px 3px rgba(23, 33, 28, 0.2);
+  transition: transform 0.15s ease;
 }
 
-.store-pin:hover {
-  transform: scale(1.12);
+.paper-store-pin-solid:hover {
+  transform: scale(1.15);
 }
 
-.store-pin.is-active {
+.paper-store-pin-solid.is-selected {
+  background: #F6E05E;
+  color: #17211C;
+  border-color: #17211C;
   transform: scale(1.22);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(23, 33, 28, 0.3);
 }
 
-/* Print the shareable savings card only ----------------------------- */
-
-@media print {
-  @page {
-    margin: 14mm;
-  }
-
-  body {
-    background: #ffffff !important;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  .print-card,
-  .print-card * {
-    visibility: visible;
-  }
-
-  .print-card {
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: 100%;
-    box-shadow: none !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-
-  .no-print {
-    display: none !important;
-  }
+/* Hollow pin (outside walk ring) */
+.paper-store-pin-hollow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  width: 24px;
+  border-radius: 4px;
+  background: #FBF9F3;
+  color: #17211C;
+  border: 1.5px solid #17211C;
+  font-family: 'Fraunces', serif;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(23, 33, 28, 0.12);
+  transition: transform 0.15s ease;
 }
 
-/* Respect reduced motion -------------------------------------------- */
+.paper-store-pin-hollow:hover {
+  transform: scale(1.15);
+}
+
+.paper-store-pin-hollow.is-selected {
+  background: #F6E05E;
+  color: #17211C;
+  border-color: #17211C;
+  transform: scale(1.22);
+}
+
+/* Reach ring label */
+.leaflet-tooltip.reach-ring-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #5E6A63 !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 9px !important;
+  padding: 0 !important;
+  letter-spacing: 0.02em;
+}
+
+/* Break-even calculator slider */
+.paper-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #17211C;
+  outline: none;
+  border-radius: 0;
+}
+
+.paper-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  background: #FBF9F3;
+  border: 2px solid #17211C;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(23, 33, 28, 0.2);
+}
+
+.paper-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  background: #F6E05E;
+}
+
+.paper-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: #FBF9F3;
+  border: 2px solid #17211C;
+  cursor: grab;
+}
+
+/* Scrollbar */
+.paper-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.paper-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.paper-scroll::-webkit-scrollbar-thumb {
+  background: rgba(23, 33, 28, 0.2);
+  border-radius: 2px;
+}
+.paper-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(23, 33, 28, 0.35);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -342,7 +314,6 @@
   *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
   }
 }

@@ -1,24 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import {
-  BookOpen,
-  Calculator,
-  Compass,
-  Leaf,
-  Loader2,
-  MapPin,
-  Navigation,
-  ShieldCheck,
-  ShoppingBag,
-  Store as StoreIcon,
-  TrendingDown,
-} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { LocateFixed, ChevronDown } from 'lucide-react';
 import { Map } from './components/Map';
 import { StoreSearch } from './components/StoreSearch';
-import { RouteComparison } from './components/RouteComparison';
 import { CarbonCalculator } from './components/CarbonCalculator';
 import { EcoTracker } from './components/EcoTracker';
 import { Methodology } from './components/Methodology';
-import { cn } from './lib/utils';
 import type {
   CityId,
   ImpactState,
@@ -27,10 +13,6 @@ import type {
   Store,
   TransportModeId,
 } from './types';
-import {
-  formatDistance,
-  formatEmissions,
-} from './services/emissionService';
 import { buildRouteOptionsForStore } from './services/routingService';
 import {
   ALL_CATEGORY_ID,
@@ -39,47 +21,11 @@ import {
   storeMatchesCategory,
   storeMatchesQuery,
 } from './services/storeService';
+import { cn } from './lib/utils';
 
-const IMPACT_STORAGE_KEY = 'greenstep-impact-v1';
+const IMPACT_STORAGE_KEY = 'greenstep-impact-v2';
 
 type TabId = 'find' | 'calculator' | 'tracker' | 'methodology';
-
-const TABS: Array<{
-  id: TabId;
-  label: string;
-  shortLabel: string;
-  hint: string;
-  icon: typeof Compass;
-}> = [
-  {
-    id: 'find',
-    label: 'Find & Compare',
-    shortLabel: 'Find',
-    hint: 'Stores & routes',
-    icon: Compass,
-  },
-  {
-    id: 'calculator',
-    label: 'Carbon Calculator',
-    shortLabel: 'Calculator',
-    hint: 'Compare modes',
-    icon: Calculator,
-  },
-  {
-    id: 'tracker',
-    label: 'My Eco Tracker',
-    shortLabel: 'Tracker',
-    hint: 'Impact & habits',
-    icon: Leaf,
-  },
-  {
-    id: 'methodology',
-    label: 'Methodology & Sources',
-    shortLabel: 'Sources',
-    hint: 'Verified data',
-    icon: BookOpen,
-  },
-];
 
 function defaultImpact(): ImpactState {
   return {
@@ -111,75 +57,15 @@ function loadImpact(): ImpactState {
 
 function initialLocation(): Location {
   const city = CITIES[0];
-  return { lat: city.lat, lon: city.lon, label: `${city.name}, ${city.country}` };
-}
-
-function pickDefaultStore(stores: Store[]): Store | null {
-  if (stores.length === 0) return null;
-
-  const meaningful = stores.filter((store) => store.distanceKm >= 0.6);
-  const pool = meaningful.length > 0 ? meaningful : stores;
-  const preferredCategories = new Set([
-    'clothes',
-    'shoes',
-    'department_store',
-    'sports',
-  ]);
-
-  return (
-    pool.find((store) => preferredCategories.has(store.category)) ??
-    pool[0] ??
-    stores[0]
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-  icon,
-  accent = '#34d399',
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: ReactNode;
-  accent?: string;
-}) {
-  return (
-    <div className="surface-panel flex items-center gap-3 px-3.5 py-3">
-      <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border"
-        style={{
-          borderColor: `${accent}35`,
-          backgroundColor: `${accent}12`,
-          color: accent,
-        }}
-      >
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <p className="data-value truncate text-base font-semibold leading-tight text-zinc-100">
-          {value}
-        </p>
-        <p className="truncate text-[11px] text-zinc-400">
-          {label}
-        </p>
-        <p className="truncate text-[11px] text-zinc-400">{hint}</p>
-      </div>
-    </div>
-  );
+  return { lat: city.lat, lon: city.lon, label: `${city.name} (FAU Südstadt)` };
 }
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('find');
-
-  const [cityId, setCityId] = useState<CityId>(CITIES[0].id);
+  const [, setCityId] = useState<CityId>(CITIES[0].id);
   const [userLocation, setUserLocation] = useState<Location>(initialLocation);
   const [usingGeolocation, setUsingGeolocation] = useState(false);
   const [locating, setLocating] = useState(false);
-  const locationRequest = useRef(0);
-  const [locationNotice, setLocationNotice] = useState<string>();
 
   const [stores, setStores] = useState<Store[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
@@ -197,11 +83,29 @@ export default function App() {
   const [loggedStoreId, setLoggedStoreId] = useState<string | null>(null);
 
   const [impact, setImpact] = useState<ImpactState>(loadImpact);
+  const [cityMenuOpen, setCityMenuOpen] = useState(false);
 
+  // Auto-request high accuracy browser geolocation on load
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab]);
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUsingGeolocation(true);
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            label: 'Current location',
+          });
+        },
+        () => {
+          // Defaults gracefully to FAU Südstadt (Nuremberg)
+        },
+        { enableHighAccuracy: true, timeout: 5000 },
+      );
+    }
+  }, []);
 
+  // Fetch stores on location change
   useEffect(() => {
     let cancelled = false;
     setStoresLoading(true);
@@ -213,19 +117,16 @@ export default function App() {
         setStores(result.stores);
         setSource(result.source);
         setNotice(result.notice);
-        setSelectedStore((previous) => {
-          if (!previous) return pickDefaultStore(result.stores);
-          return (
-            result.stores.find((store) => store.id === previous.id) ??
-            pickDefaultStore(result.stores)
-          );
+        setSelectedStore((prev) => {
+          if (!prev) return result.stores[0] ?? null;
+          return result.stores.find((s) => s.id === prev.id) ?? result.stores[0] ?? null;
         });
       })
       .catch(() => {
         if (cancelled) return;
         setStores([]);
         setSource('fallback');
-        setNotice('Could not load shops. Check your connection and try again.');
+        setNotice('Could not load shops. Check network and retry.');
       })
       .finally(() => {
         if (!cancelled) setStoresLoading(false);
@@ -236,6 +137,7 @@ export default function App() {
     };
   }, [userLocation, reloadToken]);
 
+  // Route calculation for selected store
   useEffect(() => {
     if (!selectedStore) {
       setOptions(null);
@@ -245,27 +147,20 @@ export default function App() {
 
     let cancelled = false;
     setRoutesLoading(true);
-    setOptions(null);
-    setActiveMode(null);
 
     buildRouteOptionsForStore(selectedStore, userLocation)
       .then((routeOptions) => {
         if (cancelled) return;
         setOptions(routeOptions);
         const best =
-          routeOptions.find(
-            (option) => option.isGreenest && option.mode !== 'delivery',
-          ) ??
-          routeOptions.find((option) => option.isGreenest) ??
+          routeOptions.find((opt) => opt.isGreenest && opt.mode !== 'delivery') ??
+          routeOptions.find((opt) => opt.isGreenest) ??
           routeOptions[0];
         setActiveMode(best?.mode ?? null);
       })
       .catch(() => {
         if (cancelled) return;
         setOptions(null);
-        setNotice(
-          'Route calculation failed. Pick another shop or retry the live search.',
-        );
       })
       .finally(() => {
         if (!cancelled) setRoutesLoading(false);
@@ -276,11 +171,12 @@ export default function App() {
     };
   }, [selectedStore, userLocation]);
 
+  // Save impact to localStorage
   useEffect(() => {
     try {
       window.localStorage.setItem(IMPACT_STORAGE_KEY, JSON.stringify(impact));
     } catch {
-      // Private mode or storage full — the tracker simply stays in memory.
+      // Ignore in private browsing
     }
   }, [impact]);
 
@@ -288,410 +184,283 @@ export default function App() {
     () =>
       stores.filter(
         (store) =>
-          storeMatchesQuery(store, query) &&
-          storeMatchesCategory(store, category),
+          storeMatchesQuery(store, query) && storeMatchesCategory(store, category),
       ),
     [stores, query, category],
   );
 
-  const nearestStore = stores[0] ?? null;
   const activeRoute =
-    options?.find((option) => option.mode === activeMode) ??
-    options?.find((option) => option.isGreenest) ??
+    options?.find((opt) => opt.mode === activeMode) ??
+    options?.find((opt) => opt.isGreenest) ??
     options?.[0] ??
     null;
-  const greenestRoute =
-    options?.find((option) => option.isGreenest) ?? options?.[0] ?? null;
-  const carRoute = options?.find((option) => option.mode === 'car') ?? null;
+
   const hasLogged = selectedStore?.id === loggedStoreId;
 
-  function handleCityChange(nextCityId: CityId) {
-    const city = CITIES.find((item) => item.id === nextCityId);
+  function handleCitySelect(nextCityId: CityId) {
+    const city = CITIES.find((c) => c.id === nextCityId);
     if (!city) return;
-    locationRequest.current += 1;
-    setLocating(false);
-    setLocationNotice(undefined);
     setCityId(nextCityId);
     setUsingGeolocation(false);
-    setSelectedStore(null);
-    setOptions(null);
+    setCityMenuOpen(false);
     setUserLocation({
       lat: city.lat,
       lon: city.lon,
-      label: `${city.name}, ${city.country}`,
+      label: nextCityId === 'nuremberg' ? 'FAU Südstadt' : 'Bucharest Center',
     });
   }
 
-  const handleLocate = useCallback(() => {
-    const request = ++locationRequest.current;
-    if (!('geolocation' in navigator)) {
-      setLocationNotice('Location is unavailable in this browser. Using the selected city.');
-      return;
-    }
-
+  function handleLocate() {
+    if (!('geolocation' in navigator)) return;
     setLocating(true);
-    setLocationNotice(undefined);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (request !== locationRequest.current) return;
+      (pos) => {
         setUsingGeolocation(true);
-        setSelectedStore(null);
-        setOptions(null);
+        setLocating(false);
         setUserLocation({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          label: 'Your current location',
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          label: 'Current location',
         });
+      },
+      () => {
         setLocating(false);
       },
-      (error) => {
-        if (request !== locationRequest.current) return;
-        setLocating(false);
-        setLocationNotice(error.code === 1
-          ? 'Location access is off. Keeping the current map origin; you can choose a city below.'
-          : 'Could not find your location. Keeping the current map origin. Try again when ready.');
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+      { enableHighAccuracy: true, timeout: 7000 },
     );
-  }, []);
-
-  useEffect(() => {
-    handleLocate();
-    return () => { locationRequest.current += 1; };
-  }, [handleLocate]);
+  }
 
   function handleLogTrip() {
-    if (!activeRoute || !selectedStore || hasLogged) return;
+    if (!selectedStore || !activeRoute || hasLogged) return;
+    const savings = activeRoute.savingsGrams > 0 ? activeRoute.savingsGrams : 0;
+    const isGreen = activeRoute.isGreenest || activeRoute.mode !== 'car';
 
-    const baseline = carRoute?.emissionsGrams ?? activeRoute.emissionsGrams;
-    const isGreen = activeRoute.emissionsGrams < baseline;
-    const now = Date.now();
-
-    setImpact((previous) => {
-      const sameDay = previous.lastLoggedAt
-        ? new Date(previous.lastLoggedAt).toDateString() ===
-          new Date(now).toDateString()
-        : false;
-
-      return {
-        totalSavingsGrams:
-          previous.totalSavingsGrams + Math.max(0, activeRoute.savingsGrams),
-        tripsLogged: previous.tripsLogged + 1,
-        greenTrips: previous.greenTrips + (isGreen ? 1 : 0),
-        currentStreak: isGreen
-          ? sameDay
-            ? Math.max(previous.currentStreak, 1)
-            : previous.currentStreak + 1
-          : previous.currentStreak,
-        lastLoggedAt: now,
-      };
-    });
+    setImpact((prev) => ({
+      totalSavingsGrams: prev.totalSavingsGrams + savings,
+      tripsLogged: prev.tripsLogged + 1,
+      greenTrips: prev.greenTrips + (isGreen ? 1 : 0),
+      currentStreak: isGreen ? prev.currentStreak + 1 : 0,
+      lastLoggedAt: Date.now(),
+    }));
     setLoggedStoreId(selectedStore.id);
   }
 
-  return (
-    <div className="relative min-h-screen overflow-x-hidden bg-carbon-950 text-zinc-100">
+  function handleResetImpact() {
+    const fresh = defaultImpact();
+    setImpact(fresh);
+    try {
+      window.localStorage.removeItem(IMPACT_STORAGE_KEY);
+    } catch {
+      // storage unavailable
+    }
+  }
 
-      <header className="sticky top-0 z-[1000] border-b border-white/[0.08] bg-carbon-950/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1560px] px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4 py-3">
+  return (
+    <div className="min-h-screen bg-paper text-ink flex flex-col font-sans selection:bg-highlighter selection:text-ink">
+      {/* Top Bar: Exactly 56px height, plain wordmark, text tabs with underline */}
+      <header className="h-14 border-b border-hairline bg-surface px-4 sm:px-6 flex items-center justify-between shrink-0 z-30">
+        {/* Left: Plain wordmark (no icon tile, no tagline) */}
+        <div className="flex items-center gap-6">
+          <button
+            type="button"
+            onClick={() => setActiveTab('find')}
+            className="font-serif text-xl font-bold tracking-tight text-ink cursor-pointer hover:opacity-85 text-left"
+          >
+            GreenStep
+          </button>
+
+          {/* Navigation text tabs with underline on active */}
+          <nav className="hidden sm:flex items-center gap-6 h-14" aria-label="Main tabs">
             <button
               type="button"
               onClick={() => setActiveTab('find')}
-              className="flex items-center gap-3 text-left"
+              className={cn(
+                'h-14 flex items-center text-xs transition-colors cursor-pointer',
+                activeTab === 'find'
+                  ? 'border-b-2 border-ink text-ink font-semibold'
+                  : 'text-ink-muted hover:text-ink',
+              )}
             >
-              <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500">
-                <Leaf className="h-5 w-5 text-carbon-950" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="font-display text-xl font-extrabold tracking-tight text-zinc-100">
-                    GreenStep
-                  </h1>
-                  <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
-                    Campus pilot
-                  </span>
-                </div>
-                <p className="hidden text-[11px] text-zinc-400 sm:block">
-                  Green Shopping Companion — shop close, travel smart.
-                </p>
-              </div>
+              Find & Compare
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('calculator')}
+              className={cn(
+                'h-14 flex items-center text-xs transition-colors cursor-pointer',
+                activeTab === 'calculator'
+                  ? 'border-b-2 border-ink text-ink font-semibold'
+                  : 'text-ink-muted hover:text-ink',
+              )}
+            >
+              Calculator
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('tracker')}
+              className={cn(
+                'h-14 flex items-center text-xs transition-colors cursor-pointer',
+                activeTab === 'tracker'
+                  ? 'border-b-2 border-ink text-ink font-semibold'
+                  : 'text-ink-muted hover:text-ink',
+              )}
+            >
+              Eco Tracker
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('methodology')}
+              className={cn(
+                'h-14 flex items-center text-xs transition-colors cursor-pointer',
+                activeTab === 'methodology'
+                  ? 'border-b-2 border-ink text-ink font-semibold'
+                  : 'text-ink-muted hover:text-ink',
+              )}
+            >
+              Methodology
+            </button>
+          </nav>
+        </div>
+
+        {/* Right: Location selector & locate button */}
+        <div className="flex items-center gap-2">
+          {/* Origin selector */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setCityMenuOpen(!cityMenuOpen)}
+              className="flex items-center gap-1 text-xs font-mono text-ink-muted hover:text-ink px-2 py-1 rounded-sm border border-hairline bg-paper cursor-pointer"
+            >
+              <span>From: {usingGeolocation ? 'Current GPS' : userLocation.label.replace(' (FAU Südstadt)', '')}</span>
+              <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
 
-            <nav
-              className="hidden items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1 lg:flex"
-              aria-label="Main navigation"
-            >
-              {TABS.map((tab) => {
-                const Icon = tab.icon;
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition',
-                      active
-                        ? 'bg-white/[0.08] text-zinc-100'
-                        : 'text-emerald-100/55 hover:bg-white/5 hover:text-emerald-100/85',
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
-
-            <div className="hidden items-center gap-2 sm:flex lg:hidden xl:flex">
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                <MapPin className="h-4 w-4 text-emerald-300" />
-                <div className="max-w-[180px]">
-                  <p className="text-[11px] text-zinc-400">
-                    Origin
-                  </p>
-                  <p className="truncate text-[11px] font-medium text-emerald-100/75">
-                    {usingGeolocation
-                      ? 'Your current location'
-                      : userLocation.label}
-                  </p>
-                </div>
+            {cityMenuOpen && (
+              <div className="absolute right-0 mt-1 w-44 bg-surface border border-hairline rounded-sm shadow-md py-1 z-50 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleCitySelect('nuremberg')}
+                  className="w-full text-left px-3 py-1.5 hover:bg-paper font-sans text-ink"
+                >
+                  FAU Südstadt (Nuremberg)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCitySelect('bucharest')}
+                  className="w-full text-left px-3 py-1.5 hover:bg-paper font-sans text-ink"
+                >
+                  Bucharest Center
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleLocate}
-                disabled={locating}
-                className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2.5 text-[11px] font-semibold text-emerald-200 transition hover:border-emerald-400/50 hover:bg-emerald-400/15 disabled:cursor-wait disabled:opacity-60"
-              >
-                {locating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Navigation className="h-3.5 w-3.5" />
-                )}
-                Locate
-              </button>
-            </div>
+            )}
           </div>
 
-          <nav
-            className="-mx-1 flex gap-1 overflow-x-auto pb-2 lg:hidden"
-            aria-label="Main navigation"
+          {/* Locate Icon */}
+          <button
+            type="button"
+            onClick={handleLocate}
+            disabled={locating}
+            className="p-1.5 rounded-sm border border-hairline bg-paper text-ink-muted hover:text-ink transition-colors cursor-pointer"
+            title="Detect precise GPS location"
+            aria-label="Detect precise GPS location"
           >
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    'flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-semibold transition',
-                    active
-                      ? 'bg-white/[0.08] text-zinc-100'
-                      : 'border border-white/10 bg-white/[0.03] text-emerald-100/55',
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {tab.shortLabel}
-                </button>
-              );
-            })}
-          </nav>
+            <LocateFixed className={cn('h-3.5 w-3.5', locating && 'animate-spin text-forest')} />
+          </button>
         </div>
       </header>
 
-      <div className="relative mx-auto max-w-[1560px] px-4 pb-8 pt-4 sm:px-6 lg:px-8">
+      {/* Mobile Sub-Navigation */}
+      <div className="sm:hidden border-b border-hairline bg-surface flex items-center justify-around text-xs">
+        <button
+          type="button"
+          onClick={() => setActiveTab('find')}
+          className={cn('py-2 px-1', activeTab === 'find' ? 'border-b-2 border-ink font-semibold' : 'text-ink-muted')}
+        >
+          Find
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('calculator')}
+          className={cn('py-2 px-1', activeTab === 'calculator' ? 'border-b-2 border-ink font-semibold' : 'text-ink-muted')}
+        >
+          Calculator
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('tracker')}
+          className={cn('py-2 px-1', activeTab === 'tracker' ? 'border-b-2 border-ink font-semibold' : 'text-ink-muted')}
+        >
+          Tracker
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('methodology')}
+          className={cn('py-2 px-1', activeTab === 'methodology' ? 'border-b-2 border-ink font-semibold' : 'text-ink-muted')}
+        >
+          Methodology
+        </button>
+      </div>
+
+      {/* Main View Area */}
+      <main className="flex-1 overflow-hidden">
         {activeTab === 'find' && (
-          <>
-            <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-              <StatCard
-                icon={<StoreIcon className="h-4 w-4" />}
-                label="Shops nearby"
-                value={`${stores.length}`}
-                hint={source === 'osm' ? 'OpenStreetMap live' : 'Demo dataset'}
-              />
-              <StatCard
-                icon={<MapPin className="h-4 w-4" />}
-                label="Nearest shop"
-                value={
-                  nearestStore ? formatDistance(nearestStore.distanceKm) : '—'
-                }
-                hint={nearestStore?.name ?? 'Searching…'}
-                accent="#94a3b8"
-              />
-              <StatCard
-                icon={<Leaf className="h-4 w-4" />}
-                label="Greenest trip"
-                value={
-                  greenestRoute
-                    ? formatEmissions(greenestRoute.emissionsGrams)
-                    : '—'
-                }
-                hint={greenestRoute?.modeName ?? 'Select a shop'}
-                accent="#10b981"
-              />
-              <StatCard
-                icon={<TrendingDown className="h-4 w-4" />}
-                label="Save vs solo car"
-                value={
-                  greenestRoute
-                    ? formatEmissions(Math.max(0, greenestRoute.savingsGrams))
-                    : '—'
-                }
-                hint={
-                  carRoute
-                    ? `Car trip = ${formatEmissions(carRoute.emissionsGrams)}`
-                    : 'Round trip comparison'
-                }
-                accent="#10b981"
+          <div className="h-[calc(100vh-56px)] flex flex-col md:flex-row overflow-hidden">
+            {/* Left Column (~380px): Search, filters, dense list, in-place TripReceipt expansion */}
+            <div className="order-2 md:order-1 h-[55vh] md:h-full md:w-[380px] lg:w-[410px] shrink-0">
+              <StoreSearch
+                stores={filteredStores}
+                totalStores={stores.length}
+                loading={storesLoading}
+                source={source}
+                notice={notice}
+                query={query}
+                onQueryChange={setQuery}
+                category={category}
+                onCategoryChange={setCategory}
+                selectedStore={selectedStore}
+                onSelectStore={setSelectedStore}
+                onRetry={() => setReloadToken((t) => t + 1)}
+                routeOptions={options}
+                routesLoading={routesLoading}
+                activeMode={activeMode}
+                onSelectMode={setActiveMode}
+                onLogTrip={handleLogTrip}
+                hasLogged={hasLogged}
+                userLocation={userLocation}
               />
             </div>
 
-            <main className="mt-4 grid gap-4 lg:grid-cols-[400px_minmax(0,1fr)] xl:grid-cols-[440px_minmax(0,1fr)]">
-              <aside className="space-y-4">
-                <StoreSearch
-                  query={query}
-                  onQueryChange={setQuery}
-                  category={category}
-                  onCategoryChange={setCategory}
-                  stores={filteredStores}
-                  totalStores={stores.length}
-                  selectedStore={selectedStore}
-                  onSelectStore={setSelectedStore}
-                  loading={storesLoading}
-                  locating={locating}
-                  usingGeolocation={usingGeolocation}
-                  source={source}
-                  notice={[locationNotice, notice].filter(Boolean).join(' ') || undefined}
-                  cityId={cityId}
-                  onCityChange={handleCityChange}
-                  onLocate={handleLocate}
-                  onRetry={() => setReloadToken((value) => value + 1)}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('calculator')}
-                  className="surface-panel group flex w-full items-center justify-between gap-3 p-4 text-left transition hover:border-emerald-400/30 hover:bg-white/[0.05]"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
-                      <Calculator className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold text-zinc-100">
-                        Compare any distance
-                      </p>
-                      <p className="text-[11px] text-zinc-400">
-                        Open the standalone carbon calculator
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-emerald-300 transition group-hover:translate-x-0.5">
-                    →
-                  </span>
-                </button>
-              </aside>
-
-              <section className="space-y-4">
-                <div className="relative">
-                  <Map
-                    userLocation={userLocation}
-                    stores={stores}
-                    selectedStore={selectedStore}
-                    activeRoute={activeRoute}
-                    onSelectStore={setSelectedStore}
-                    className="h-[380px] sm:h-[460px] xl:h-[520px]"
-                  />
-
-                  <div className="pointer-events-none absolute left-3 top-3 z-[800] rounded-2xl border border-emerald-400/15 bg-carbon-950/80 px-3 py-2 shadow-panel backdrop-blur-md">
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2">
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                      </span>
-                      <p className="text-[11px] font-semibold text-emerald-300/80">
-                        {source === 'osm' ? 'Nearby shops' : 'Sample shops'}
-                      </p>
-                    </div>
-                    <p className="mt-1 text-xs font-medium text-zinc-100/80">
-                      {stores.length} shops within 5 km
-                    </p>
-                    <p className="text-[11px] text-zinc-400">
-                      {usingGeolocation
-                        ? 'Around your location'
-                        : userLocation.label}
-                    </p>
-                  </div>
-
-                  {activeRoute && selectedStore && (
-                    <div className="pointer-events-none absolute bottom-3 left-3 z-[800] max-w-[260px] rounded-2xl border border-white/10 bg-carbon-950/80 px-3 py-2.5 shadow-panel backdrop-blur-md">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: activeRoute.color }}
-                        />
-                        <p className="text-[11px] font-semibold text-zinc-400">
-                          {activeRoute.modeName} route
-                        </p>
-                      </div>
-                      <p className="mt-1 truncate text-xs font-medium text-zinc-100/85">
-                        {selectedStore.name}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-zinc-400">
-                        {activeRoute.isDelivery
-                          ? `${formatEmissions(activeRoute.emissionsGrams)} · next-day parcel`
-                          : `${formatEmissions(activeRoute.emissionsGrams)} · ${formatDistance(activeRoute.distanceKm)} round trip`}
-                      </p>
-                    </div>
-                  )}
-
-
-                </div>
-
-                <RouteComparison
-                  store={selectedStore}
-                  options={options}
-                  loading={routesLoading}
-                  activeMode={activeMode}
-                  onSelectMode={setActiveMode}
-                  onLogTrip={handleLogTrip}
-                  hasLogged={hasLogged}
-                />
-              </section>
-            </main>
-          </>
+            {/* Right Map Canvas: Takes the rest of the viewport height */}
+            <div className="order-1 md:order-2 flex-1 h-[45vh] md:h-full">
+              <Map
+                userLocation={userLocation}
+                stores={filteredStores}
+                selectedStore={selectedStore}
+                activeRoute={activeRoute}
+                onSelectStore={setSelectedStore}
+              />
+            </div>
+          </div>
         )}
 
-        {activeTab === 'calculator' && <CarbonCalculator />}
+        {activeTab === 'calculator' && (
+          <div className="h-[calc(100vh-56px)] overflow-y-auto paper-scroll bg-paper">
+            <CarbonCalculator />
+          </div>
+        )}
 
         {activeTab === 'tracker' && (
-          <EcoTracker
-            impact={impact}
-            onReset={() => {
-              setImpact(defaultImpact());
-              setLoggedStoreId(null);
-            }}
-          />
+          <div className="h-[calc(100vh-56px)] overflow-y-auto paper-scroll bg-paper">
+            <EcoTracker impact={impact} onReset={handleResetImpact} />
+          </div>
         )}
 
-        {activeTab === 'methodology' && <Methodology />}
-
-        <footer className="mt-6 flex flex-col gap-2 border-t border-white/[0.08] pt-4 text-[11px] text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-center gap-1.5">
-            <ShoppingBag className="h-3 w-3" />
-            OpenStreetMap · OSRM · UK DESNZ 2026/2025 · EEA. Estimates, not
-            certified measurements.
-          </p>
-          <p className="flex items-center gap-1.5">
-            <ShieldCheck className="h-3 w-3" />
-            No account needed. Coordinates sent to map and routing providers.
-          </p>
-        </footer>
-      </div>
+        {activeTab === 'methodology' && (
+          <div className="h-[calc(100vh-56px)] overflow-y-auto paper-scroll bg-paper">
+            <Methodology />
+          </div>
+        )}
+      </main>
     </div>
   );
 }

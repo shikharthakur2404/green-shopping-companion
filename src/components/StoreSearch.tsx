@@ -1,333 +1,216 @@
-import {
-  ChevronRight,
-  Footprints,
-  Loader2,
-  LocateFixed,
-  MapPin,
-  RefreshCw,
-  Search,
-  Store as StoreIcon,
-  TrainFront,
-  X,
-} from 'lucide-react';
-import type { CityId, Store } from '../types';
+import { useMemo } from 'react';
+import { RefreshCw, Search } from 'lucide-react';
+import type { Location, RouteOption, Store, TransportModeId } from '../types';
 import { cn } from '../lib/utils';
+import { TripReceipt } from './TripReceipt';
 import {
-  formatDistance,
-  formatDuration,
-} from '../services/emissionService';
-import {
-  ALL_CATEGORY_ID,
-  CITIES,
   STORE_CATEGORIES,
   getCategoryLabel,
+  haversineKm,
 } from '../services/storeService';
 
 interface StoreSearchProps {
+  stores: Store[];
+  totalStores: number;
+  loading: boolean;
+  source: 'osm' | 'fallback' | null;
+  notice?: string;
   query: string;
   onQueryChange: (query: string) => void;
   category: string;
   onCategoryChange: (category: string) => void;
-  stores: Store[];
-  totalStores: number;
   selectedStore: Store | null;
   onSelectStore: (store: Store) => void;
-  loading: boolean;
-  locating: boolean;
-  usingGeolocation: boolean;
-  source: 'osm' | 'fallback' | null;
-  notice?: string;
-  cityId: CityId;
-  onCityChange: (city: CityId) => void;
-  onLocate: () => void;
   onRetry: () => void;
-}
-
-function StoreRow({
-  store,
-  active,
-  onSelect,
-}: {
-  store: Store;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  const walkMinutes = (store.distanceKm / 4.8) * 60;
-  const transitMinutes = (store.distanceKm / 32) * 60 + 7;
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={active}
-      className={cn(
-        'group flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition-all duration-200',
-        active
-          ? 'border-emerald-400/50 bg-emerald-400/10'
-          : 'border-white/[0.08] bg-white/[0.02] hover:border-emerald-400/25 hover:bg-white/[0.05]',
-      )}
-    >
-      <span title="Illustrative retail photo" className="relative h-[86px] w-[86px] shrink-0 overflow-hidden rounded-xl bg-carbon-900">
-        {store.imageUrl && (
-          <StoreIcon className="absolute inset-0 m-auto h-6 w-6 text-zinc-500" aria-hidden="true" />
-        )}
-        {store.imageUrl && (
-          <img
-            src={store.imageUrl}
-            alt=""
-            loading="lazy"
-            className="relative h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            onError={(event) => {
-              event.currentTarget.style.opacity = '0';
-            }}
-          />
-        )}
-      </span>
-
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-bold text-zinc-100">
-            {store.name}
-          </span>
-          {store.isFallback && (
-            <span className="shrink-0 rounded-full border border-amber-300/20 bg-amber-300/10 px-1.5 py-0.5 text-[11px] font-semibold text-amber-200/80">
-              demo
-            </span>
-          )}
-        </span>
-        <span className="mt-1 block truncate text-[11px] text-zinc-400">
-          {store.address}
-        </span>
-        <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-zinc-400">
-          <span className="rounded-md bg-white/5 px-1.5 py-1 font-mono font-semibold tabular-nums text-zinc-200">
-            ~{formatDistance(store.distanceKm)}
-          </span>
-          <span className="flex items-center gap-1 rounded-md border border-white/[0.08] px-1.5 py-1" title="Estimated one-way time">
-            <Footprints className="h-3 w-3 text-emerald-400/70" />
-            {formatDuration(walkMinutes)}
-          </span>
-          <span className="flex items-center gap-1 rounded-md border border-white/[0.08] px-1.5 py-1" title="Estimated one-way time">
-            <TrainFront className="h-3 w-3 text-cyan-400/70" />
-            {formatDuration(transitMinutes)}
-          </span>
-        </span>
-        <span className="mt-2 inline-flex rounded-full border border-white/[0.08] px-2 py-0.5 text-[11px] text-zinc-400">
-          {getCategoryLabel(store.category)}
-        </span>
-      </span>
-
-      <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-300" />
-    </button>
-  );
+  routeOptions: RouteOption[] | null;
+  routesLoading: boolean;
+  activeMode: TransportModeId | null;
+  onSelectMode: (mode: TransportModeId) => void;
+  onLogTrip: () => void;
+  hasLogged: boolean;
+  userLocation: Location;
 }
 
 export function StoreSearch({
+  stores,
+  totalStores,
+  loading,
+  source,
   query,
   onQueryChange,
   category,
   onCategoryChange,
-  stores,
-  totalStores,
   selectedStore,
   onSelectStore,
-  loading,
-  locating,
-  usingGeolocation,
-  source,
-  notice,
-  cityId,
-  onCityChange,
-  onLocate,
   onRetry,
+  routeOptions,
+  routesLoading,
+  activeMode,
+  onSelectMode,
+  onLogTrip,
+  hasLogged,
+  userLocation,
 }: StoreSearchProps) {
+  // Live headline sentence computation
+  const summarySentence = useMemo(() => {
+    if (stores.length === 0) return 'No shops match your criteria.';
+    const walkable = stores.filter(
+      (s) => (s.distanceKm / 5) * 60 <= 15 || haversineKm(userLocation, s.location) <= 1.25,
+    );
+    const nearest = [...stores].sort((a, b) => a.distanceKm - b.distanceKm)[0];
+    const walkMin = Math.max(1, Math.round((nearest.distanceKm / 5) * 60));
+
+    if (walkable.length > 0) {
+      return `${walkable.length} of ${totalStores} shops within a 15-minute walk. Nearest: ${nearest.name}, ${walkMin} min on foot, 0 g CO₂e.`;
+    }
+    return `${stores.length} of ${totalStores} shops nearby. Nearest: ${nearest.name}, ${walkMin} min on foot, 0 g CO₂e.`;
+  }, [stores, userLocation]);
+
   return (
-    <section className="surface-panel p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="section-label">Find &amp; compare</p>
-          <h2 className="mt-1 font-display text-xl font-bold tracking-tight text-zinc-100">
-            Where are you shopping?
-          </h2>
+    <aside className="w-full md:w-[380px] lg:w-[410px] shrink-0 border-r border-hairline bg-surface flex flex-col h-full overflow-hidden text-ink">
+      {/* Top Search & Filter Control */}
+      <div className="p-3.5 border-b border-hairline space-y-2.5 shrink-0 bg-surface">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-muted pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Search stores, brands (e.g. Adidas), or items…"
+            className="w-full bg-paper border border-hairline rounded-sm pl-8 pr-3 py-1.5 text-xs text-ink placeholder:text-ink-muted/60 focus:border-ink focus:bg-surface focus:outline-none"
+          />
         </div>
-        <button
-          type="button"
-          onClick={onLocate}
-          disabled={locating}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-300 transition hover:border-emerald-400/40 hover:bg-emerald-400/20 disabled:cursor-wait disabled:opacity-60"
-          aria-label="Use my current location"
-          title="Use my current location"
-        >
-          {locating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <LocateFixed className="h-4 w-4" />
-          )}
-        </button>
+
+        {/* Category Segmented Dropdown or Text Control */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 paper-scroll text-xs">
+          {STORE_CATEGORIES.map((cat) => {
+            const isActive = category === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => onCategoryChange(cat.id)}
+                className={cn(
+                  'px-2 py-0.5 rounded-sm whitespace-nowrap text-[11px] transition-colors',
+                  isActive
+                    ? 'bg-ink text-surface font-medium'
+                    : 'text-ink-muted hover:text-ink hover:bg-paper',
+                )}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Live Headline Sentence */}
+        <p className="text-[11px] font-sans text-ink-muted leading-snug pt-0.5 border-t border-hairline/60">
+          {loading ? 'Finding nearby shops…' : summarySentence}
+        </p>
       </div>
 
-      <div className="relative mt-4">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-300/60" />
-        <input
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Search a shop, brand or item"
-          className="h-12 w-full rounded-2xl border border-white/10 bg-carbon-950/60 pl-11 pr-10 text-[13px] text-zinc-100 placeholder:text-zinc-400 outline-none transition focus:border-emerald-400/50 focus:bg-carbon-950 focus:ring-2 focus:ring-emerald-400/10"
-          aria-label="Search stores, brands or items"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => onQueryChange('')}
-            className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-emerald-100"
-            aria-label="Clear search"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+      {/* Dense Store Rows with In-Place Trip Receipt Expansion */}
+      <div className="flex-1 overflow-y-auto divide-y divide-hairline paper-scroll">
+        {loading ? (
+          <div className="p-6 text-center text-xs text-ink-muted font-mono">
+            Scanning OpenStreetMap…
+          </div>
+        ) : stores.length === 0 ? (
+          <div className="p-8 text-center text-xs text-ink-muted">
+            <p className="font-serif text-sm text-ink mb-1">No matching shops found</p>
+            <p>Try searching for a different brand or switch to all shops.</p>
+          </div>
+        ) : (
+          stores.map((store) => {
+            const isSelected = selectedStore?.id === store.id;
+            const walkMinutes = Math.max(1, Math.round((store.distanceKm / 5) * 60));
+            const initial = store.name.charAt(0).toUpperCase();
+
+            return (
+              <div key={store.id} className="transition-colors">
+                {/* Store Row Header */}
+                <button
+                  type="button"
+                  onClick={() => onSelectStore(store)}
+                  className={cn(
+                    'w-full text-left p-3 flex items-start justify-between gap-3 transition-colors',
+                    isSelected ? 'bg-highlighter/30' : 'hover:bg-paper/70',
+                  )}
+                >
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    {/* Plain Monogram Glyph */}
+                    <span
+                      className={cn(
+                        'flex h-6 w-6 shrink-0 items-center justify-center rounded-sm font-serif text-xs font-bold border',
+                        isSelected
+                          ? 'border-ink bg-ink text-surface'
+                          : 'border-hairline bg-paper text-ink',
+                      )}
+                    >
+                      {initial}
+                    </span>
+
+                    <div className="min-w-0">
+                      <p className="font-serif text-sm font-semibold text-ink leading-tight truncate">
+                        {store.name}
+                      </p>
+                      <p className="text-[11px] text-ink-muted truncate mt-0.5">
+                        {getCategoryLabel(store.category)} · {store.address}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Walk time & Carbon */}
+                  <div className="text-right shrink-0">
+                    <p className="font-serif text-base font-bold text-ink leading-none">
+                      {walkMinutes} <span className="text-[10px] font-sans font-normal text-ink-muted">min</span>
+                    </p>
+                    <p className="font-mono text-[10px] text-forest font-medium mt-0.5">
+                      0 g on foot
+                    </p>
+                  </div>
+                </button>
+
+                {/* In-place Expanded Trip Receipt when selected */}
+                {isSelected && (
+                  <div className="p-3 pt-0 bg-surface/90 border-t border-hairline/60">
+                    {routesLoading ? (
+                      <div className="p-4 text-center text-xs font-mono text-ink-muted">
+                        Calculating routed travel options…
+                      </div>
+                    ) : routeOptions && routeOptions.length > 0 ? (
+                      <TripReceipt
+                        store={store}
+                        options={routeOptions}
+                        activeMode={activeMode}
+                        onSelectMode={onSelectMode}
+                        onLogTrip={onLogTrip}
+                        hasLogged={hasLogged}
+                      />
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {STORE_CATEGORIES.map((item) => {
-          const active = category === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onCategoryChange(item.id)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition',
-                active
-                  ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-200'
-                  : 'border-white/10 bg-white/[0.02] text-zinc-400 hover:border-white/15 hover:text-emerald-100/80',
-              )}
-            >
-              <span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: item.accent }}
-              />
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] pt-3">
-        <div className="flex items-center gap-1">
-          {CITIES.map((city) => (
-            <button
-              key={city.id}
-              type="button"
-              onClick={() => onCityChange(city.id)}
-              className={cn(
-                'rounded-lg px-2.5 py-1 text-[11px] font-semibold transition',
-                cityId === city.id && !locating && !usingGeolocation
-                  ? 'bg-emerald-400/15 text-emerald-200'
-                  : 'text-zinc-400 hover:bg-white/5 hover:text-emerald-100/70',
-              )}
-            >
-              {city.name}
-            </button>
-          ))}
-        </div>
-
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold',
-            source === 'osm'
-              ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300'
-              : source === 'fallback'
-                ? 'border-amber-300/20 bg-amber-300/10 text-amber-200'
-                : 'border-white/10 bg-white/5 text-zinc-400',
-          )}
-        >
-          <span
-            className={cn(
-              'h-1.5 w-1.5 rounded-full',
-              source === 'osm'
-                ? 'bg-emerald-400'
-                : source === 'fallback'
-                  ? 'bg-amber-300'
-                  : 'bg-emerald-100/30',
-            )}
-          />
-          {loading
-            ? 'Finding shops…'
-            : source === 'osm'
-              ? 'OpenStreetMap live'
-              : source === 'fallback'
-                ? 'Demo dataset'
-                : 'Waiting'}
-        </span>
-      </div>
-
-      {notice && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] p-2.5 text-[11px] leading-relaxed text-amber-100/70">
-          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300/80" />
-          <p className="flex-1">{notice}</p>
+      {/* Humble Footer: Demo data note with single retry control */}
+      {source === 'fallback' && (
+        <div className="p-2 border-t border-hairline bg-paper/60 flex items-center justify-between text-[10px] font-mono text-ink-muted">
+          <span>Demo data</span>
           <button
             type="button"
             onClick={onRetry}
-            className="shrink-0 rounded-md p-1 text-amber-200/70 transition hover:bg-amber-300/10 hover:text-amber-200"
-            aria-label="Retry live shop search"
-            title="Retry live shop search"
+            className="flex items-center gap-1 hover:text-ink underline cursor-pointer"
           >
-            <RefreshCw className="h-3 w-3" />
+            <RefreshCw className="h-2.5 w-2.5" />
+            Retry live scan
           </button>
         </div>
       )}
-
-      <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-400">
-        <span>
-          {loading
-            ? 'Looking for shops…'
-            : `${stores.length} of ${totalStores} shops${
-                query || category !== ALL_CATEGORY_ID ? ' match' : ' nearby'
-              }`}
-        </span>
-        <span className="flex items-center gap-1">
-          <StoreIcon className="h-3 w-3" />
-          within 5 km
-        </span>
-      </div>
-
-      <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">Approximate road distances and one-way times. Photos are illustrative.</p>
-
-      <div className="mt-2 max-h-[430px] space-y-1.5 overflow-y-auto pr-1 greenstep-scroll">
-        {loading ? (
-          Array.from({ length: 5 }).map((_, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-2.5"
-            >
-              <div className="h-[86px] w-[86px] animate-pulse rounded-xl bg-white/5" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 w-2/3 animate-pulse rounded bg-white/5" />
-                <div className="h-2.5 w-full animate-pulse rounded bg-white/[0.03]" />
-                <div className="h-2.5 w-1/3 animate-pulse rounded bg-white/[0.03]" />
-              </div>
-            </div>
-          ))
-        ) : stores.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-8 text-center">
-            <p className="text-sm font-semibold text-emerald-100/70">
-              No matching shops
-            </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
-              Try a brand like Adidas or Zara, or switch to the All shops
-              category.
-            </p>
-          </div>
-        ) : (
-          stores.map((store) => (
-            <StoreRow
-              key={store.id}
-              store={store}
-              active={selectedStore?.id === store.id}
-              onSelect={() => onSelectStore(store)}
-            />
-          ))
-        )}
-      </div>
-    </section>
+    </aside>
   );
 }
